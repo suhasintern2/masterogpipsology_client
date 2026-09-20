@@ -185,8 +185,8 @@
 }
 
 html {
-  /* Lenis attaches its own scroll management */
-  overflow-x: hidden;
+  /* Lenis attaches its own scroll management. Use clip so position: sticky is not broken */
+  overflow-x: clip;
   /* 14px on tiny phones → 16px on tablets → 17px on large screens */
   font-size: clamp(14px, 1.05vw + 0.5rem, 17px);
 }
@@ -200,7 +200,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.6;
-  overflow-x: hidden;
+  overflow-x: clip;
   /* No background transition — beige is the permanent canvas */
 }
 

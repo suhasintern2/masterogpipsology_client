@@ -8,9 +8,10 @@ import React from 'react';
 import { ThemeScrollWrapper } from '@/components/providers/ThemeScrollWrapper';
 import { GlassHeader } from '@/components/nav/GlassHeader';
 import { Hero } from '@/components/sections/Hero';
+import { CryptoMarketScroll } from '@/components/sections/CryptoMarketScroll';
 import { Marquee } from '@/components/sections/Marquee';
 import { Markets } from '@/components/sections/Markets';
-import { BurjKhalifaReveal } from '@/components/sections/BurjKhalifaReveal';
+import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
 import { LuxuryTeamGallery } from '@/components/sections/LuxuryTeamGallery';
 import { Gallery } from '@/components/sections/Gallery';
 import { Curriculum } from '@/components/sections/Curriculum';
@@ -37,8 +38,11 @@ export default function Page(): React.ReactElement {
             Skip to main content
           </a>
 
-          {/* Hero — full-viewport, gradient light play on scroll */}
+          {/* Hero — full-viewport background image */}
           <Hero />
+
+          {/* 240-frame sticky scroll sequence: "Let me introduce you to the market, first crypto" */}
+          <CryptoMarketScroll />
 
           {/* Marquee — ticker strip between hero and main content */}
           <Marquee />
@@ -46,11 +50,11 @@ export default function Page(): React.ReactElement {
           {/* Markets covered — stock, crypto, and forex description */}
           <Markets />
 
-          {/* Burj Khalifa landmark — basement spans full width, lifting upward */}
-          <BurjKhalifaReveal />
-
           {/* ── PERSISTENT LUXURY BLACK EFFECT (Stays black all the way to page end) ── */}
           <div className="theme-black-section relative w-full bg-[#08080A] text-[#F5EFEB]">
+            {/* The Intelligence Layer Motion UI — AI Infrastructure Hero */}
+            <IntelligenceHero />
+
             {/* Luxury animated team movement gallery & moments */}
             <LuxuryTeamGallery />
 
