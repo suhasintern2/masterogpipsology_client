@@ -65,8 +65,6 @@ export function GlassHeader(): React.ReactElement {
               className="absolute inset-0 rounded-2xl"
               style={{
                 opacity: useTransform(darkProgress, [0, 1], [1, 0]),
-                backdropFilter: 'blur(20px) saturate(160%)',
-                WebkitBackdropFilter: 'blur(20px) saturate(160%)',
                 backgroundColor: 'rgba(245, 240, 230, 0.75)',
                 boxShadow: `
                   inset 0 1px 0 rgba(255,255,255,0.7),
@@ -83,8 +81,8 @@ export function GlassHeader(): React.ReactElement {
               className="absolute inset-0 rounded-2xl"
               style={{
                 opacity: darkProgress,
-                backdropFilter: 'blur(36px) saturate(220%)',
-                WebkitBackdropFilter: 'blur(36px) saturate(220%)',
+                backdropFilter: 'blur(16px) saturate(160%)',
+                WebkitBackdropFilter: 'blur(16px) saturate(160%)',
                 background: `
                   linear-gradient(
                     135deg,

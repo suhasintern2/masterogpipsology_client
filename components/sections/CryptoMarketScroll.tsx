@@ -31,7 +31,7 @@ export function CryptoMarketScroll(): React.ReactElement {
     const pct = Math.round(progress * 100);
     if (pct !== last.pct) {
       last.pct = pct;
-      if (hudProgressRef.current) hudProgressRef.current.style.width = `${pct}%`;
+      if (hudProgressRef.current) hudProgressRef.current.style.transform = `scaleX(${pct / 100})`;
     }
   }, []);
 
@@ -89,7 +89,7 @@ export function CryptoMarketScroll(): React.ReactElement {
               </span>
               <span className="text-[11px] font-mono text-[#B0AAA0]">/ 240</span>
               <div className="w-16 h-1.5 bg-black/10 rounded-full overflow-hidden ml-1">
-                <div ref={hudProgressRef} className="h-full bg-[#D4AF37] rounded-full" style={{ width: '0%' }} />
+                <div ref={hudProgressRef} className="h-full bg-[#D4AF37] rounded-full" style={{ width: '100%', transform: 'scaleX(0)', transformOrigin: '0 50%' }} />
               </div>
             </div>
           </div>

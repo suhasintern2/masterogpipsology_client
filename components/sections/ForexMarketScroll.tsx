@@ -65,6 +65,7 @@ export function ForexMarketScroll(): React.ReactElement {
   const hudFrameRef    = useRef<HTMLSpanElement>(null);
   const hudTotalRef    = useRef<HTMLSpanElement>(null);
   const hudProgressRef = useRef<HTMLDivElement>(null);
+  const doorwayShadeRef = useRef<HTMLDivElement>(null);
 
   const forexOverlayRef       = useRef<HTMLDivElement>(null);
   const stockOverlayRef       = useRef<HTMLDivElement>(null);
@@ -104,7 +105,7 @@ export function ForexMarketScroll(): React.ReactElement {
     put('hudTotal', String(seq.frames), (v) => { if (hudTotalRef.current) hudTotalRef.current.textContent = v; });
     put('hudLabel', seq.label, (v) => { if (hudLabelRef.current) hudLabelRef.current.textContent = v; });
     const hp = localIdx / Math.max(seq.frames - 1, 1);
-    put('hudWidth', `${Math.round(hp * 100)}%`, (v) => { if (hudProgressRef.current) hudProgressRef.current.style.width = v; });
+    put('hudScale', hp.toFixed(3), (v) => { if (hudProgressRef.current) hudProgressRef.current.style.transform = `scaleX(${v})`; });
 
     // ── Overlay opacities (deterministic from global frame) ───────────────
     let forexOp = 0;
@@ -144,24 +145,22 @@ export function ForexMarketScroll(): React.ReactElement {
 
     // ── Doorway-to-video blend ─────────────────────────────────────────────
     const canvas = canvasRef.current;
+    const shade = doorwayShadeRef.current;
     const heroContent = heroContentRef.current;
     if (canvas && heroContent) {
       if (progress <= 0.73) {
         // 0.00 .. 0.73: normal playback, then settle on the sharp doorway frame
-        put('filter', 'none', (v) => { canvas.style.filter = v; });
         put('opacity', '1', (v) => { canvas.style.opacity = v; });
+        put('scale', 'none', (v) => { canvas.style.transform = v; });
+        put('shade', '0', (v) => { if (shade) shade.style.opacity = v; });
         put('pe', 'none', (v) => { heroContent.style.pointerEvents = v; });
       } else {
         // 0.73 .. 0.88: doorway frame vanishes into the dark video with zero light bloom
         const t = Math.max(0, Math.min(1, (progress - 0.73) / 0.15));
-        const blurPx = Math.min(24, t * 36);
-        const brightnessVal = Math.max(0.1, 1 - t * 0.9);
-        put(
-          'filter',
-          blurPx > 0.2 ? `blur(${blurPx.toFixed(1)}px) brightness(${brightnessVal.toFixed(2)})` : 'none',
-          (v) => { canvas.style.filter = v; },
-        );
+        // Transform/opacity only: scale + fade the canvas and a black shade stand in for blur/brightness.
         put('opacity', Math.max(0, 1 - t).toFixed(3), (v) => { canvas.style.opacity = v; });
+        put('scale', `scale(${(1 + t * 0.06).toFixed(4)})`, (v) => { canvas.style.transform = v; });
+        put('shade', (Math.min(1, t * 0.9) * (1 - t)).toFixed(3), (v) => { if (shade) shade.style.opacity = v; });
         put('pe', t >= 0.90 ? 'auto' : 'none', (v) => { heroContent.style.pointerEvents = v; });
       }
       // The canvas is opaque before 0.73, so the hero layer can stay hidden until then.
@@ -232,9 +231,13 @@ export function ForexMarketScroll(): React.ReactElement {
           style={{
             display: 'block',
             imageRendering: 'auto',
-            willChange: 'filter, opacity',
-            transform: 'translateZ(0)',
+            willChange: 'transform, opacity',
           }}
+        />
+        <div
+          ref={doorwayShadeRef}
+          className="absolute inset-0 z-[11] pointer-events-none bg-black"
+          style={{ opacity: 0 }}
         />
 
 
@@ -259,7 +262,7 @@ export function ForexMarketScroll(): React.ReactElement {
               <span className="text-[10px] font-mono text-[#B0AAA0]">/</span>
               <span ref={hudTotalRef} className="text-[10px] font-mono text-[#B0AAA0]">240</span>
               <div className="w-16 h-1.5 bg-black/10 rounded-full overflow-hidden ml-1">
-                <div ref={hudProgressRef} className="h-full bg-[#D4AF37] rounded-full" style={{ width: '0%', transition: 'none' }} />
+                <div ref={hudProgressRef} className="h-full bg-[#D4AF37] rounded-full" style={{ width: '100%', transform: 'scaleX(0)', transformOrigin: '0 50%', transition: 'none' }} />
               </div>
             </div>
           </div>

@@ -1,11 +1,10 @@
 import React from 'react';
 // ─── Page ─────────────────────────────────────────────────────────────────────
 // Server Component. Pure composition — no logic here.
-// The ThemeScrollWrapper (client) activates the scroll→colour system on mount.
 // The ArchitecturalScene wraps the core content sections (Markets, Gallery,
 // Curriculum) to create the horizontal parallax / 3D camera-movement illusion.
 
-import { ThemeScrollWrapper } from '@/components/providers/ThemeScrollWrapper';
+import { LongTaskProbe } from '@/components/dev/LongTaskProbe';
 import { GlassHeader } from '@/components/nav/GlassHeader';
 import { Hero } from '@/components/sections/Hero';
 import { CryptoMarketScroll } from '@/components/sections/CryptoMarketScroll';
@@ -21,11 +20,12 @@ import { Footer } from '@/components/sections/Footer';
 export default function Page(): React.ReactElement {
   return (
     <>
+      <LongTaskProbe />
       {/* Fixed navigation */}
       <GlassHeader />
 
       {/* Page body — the scroll root for the theme system */}
-      <ThemeScrollWrapper>
+      <div className="relative">
         <main id="main-content" style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}>
           {/* Skip to main content link for keyboard users */}
           <a
@@ -62,7 +62,7 @@ export default function Page(): React.ReactElement {
             <Footer />
           </div>
         </main>
-      </ThemeScrollWrapper>
+      </div>
     </>
   );
 }
