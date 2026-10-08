@@ -9,6 +9,7 @@ import { GlassHeader } from '@/components/nav/GlassHeader';
 import { Hero } from '@/components/sections/Hero';
 import { CryptoMarketScroll } from '@/components/sections/CryptoMarketScroll';
 import { ForexMarketScroll } from '@/components/sections/ForexMarketScroll';
+import { SculptureInterlude } from '@/components/sections/SculptureInterlude';
 import { LuxuryTeamGallery } from '@/components/sections/LuxuryTeamGallery';
 import { Gallery } from '@/components/sections/Gallery';
 import { Curriculum } from '@/components/sections/Curriculum';
@@ -52,6 +53,9 @@ export default function Page(): React.ReactElement {
 
           {/* 720-frame sticky scroll sequence: Forex + Stock Market + Opportunity */}
           <ForexMarketScroll />
+
+          {/* Text-free gold sculpture beat between Forex and the dark sections */}
+          <SculptureInterlude />
 
           {/* ── PERSISTENT LUXURY BLACK EFFECT (Stays black all the way to page end) ── */}
           <div data-nav-tone="dark" className="theme-black-section relative w-full text-[#F5EFEB]">
