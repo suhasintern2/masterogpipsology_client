@@ -4,20 +4,25 @@ import React, { useRef, useCallback } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
 import { loadProgress } from '@/lib/load-progress';
 import { RevealText } from '@/components/motion/RevealText';
+import {
+  buildFrameSet,
+  warmFirstFrame,
+  warmIndices,
+  type FrameSet,
+  type FrameTier,
+} from '@/lib/frame-sequence/sources';
 
 // ── Tunable constants ────────────────────────────────────────────────────────
 const TOTAL_FRAMES = 240;
 
-const getFrameSrc = (index: number): string => {
-  const frameNumber = String(index + 1).padStart(3, '0');
-  return `/assets/crypto/ezgif-frame-${frameNumber}.jpg`;
-};
-
-const SOURCES = [{ count: TOTAL_FRAMES, src: getFrameSrc }] as const;
+const urlsFor = (tier: FrameTier): FrameSet => buildFrameSet(['crypto'], tier);
 const PINNED = [0, TOTAL_FRAMES - 1] as const;
 // First 24 frames, then every 8th: a coarse fallback exists before the full fetch starts.
-const CRYPTO_WARM = Array.from({ length: 24 }, (_, i) => i).concat(Array.from({ length: 27 }, (_, k) => 24 + k * 8));
-if (typeof window !== 'undefined') loadProgress.register('crypto-first-frame', 0.15);
+const CRYPTO_WARM = warmIndices(TOTAL_FRAMES);
+if (typeof window !== 'undefined') {
+  loadProgress.register('crypto-first-frame', 0.15);
+  warmFirstFrame('crypto');
+}
 const frameForProgress = (p: number, total: number): number =>
   Math.min(total - 1, Math.max(0, Math.round(p * (total - 1))));
 
@@ -41,7 +46,7 @@ export function CryptoMarketScroll(): React.ReactElement {
   }, []);
 
   const { sectionRef, stickyRef, canvasRef } = useFrameSequence({
-    sources: SOURCES,
+    urlsFor,
     pinned: PINNED,
     warm: CRYPTO_WARM,
     frameForProgress,

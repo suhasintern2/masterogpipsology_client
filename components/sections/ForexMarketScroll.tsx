@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
 import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
 import { RevealText } from '@/components/motion/RevealText';
+import { buildFrameSet, type FrameSet, type FrameTier } from '@/lib/frame-sequence/sources';
 import {
   frameLockRect,
   nativeVideoRect,
@@ -29,12 +30,6 @@ const SETTLE_END  = 0.89;
 const REVEAL_ON   = 0.89;
 const REVEAL_OFF  = 0.85;
 
-// ── Frame URL helpers ────────────────────────────────────────────────────────
-const pad = (n: number): string => String(n + 1).padStart(3, '0');
-const getForexSrc       = (i: number): string => `/assets/forex/ezgif-frame-${pad(i)}.jpg`;
-const getStockSrc       = (i: number): string => `/assets/stock_market/ezgif-frame-${pad(i)}.jpg`;
-const getOpportunitySrc = (i: number): string => `/assets/opportunity/ezgif-frame-${pad(i)}.jpg`;
-
 // ── Sequence descriptor ──────────────────────────────────────────────────────
 type SeqName = 'forex' | 'stock' | 'opportunity';
 
@@ -42,14 +37,13 @@ interface SeqInfo {
   name:   SeqName;
   start:  number;
   frames: number;
-  getSrc: (i: number) => string;
   label:  string;
 }
 
 const SEQUENCES: SeqInfo[] = [
-  { name: 'forex',       start: 0,                           frames: FOREX_FRAMES,       getSrc: getForexSrc,       label: 'Asset Class 02 \u2022 Foreign Exchange' },
-  { name: 'stock',       start: FOREX_FRAMES,                frames: STOCK_FRAMES,       getSrc: getStockSrc,       label: 'Asset Class 03 \u2022 Stock Market'     },
-  { name: 'opportunity', start: FOREX_FRAMES + STOCK_FRAMES, frames: OPPORTUNITY_FRAMES, getSrc: getOpportunitySrc, label: 'The Opportunity'                        },
+  { name: 'forex',       start: 0,                           frames: FOREX_FRAMES,       label: 'Asset Class 02 \u2022 Foreign Exchange' },
+  { name: 'stock',       start: FOREX_FRAMES,                frames: STOCK_FRAMES,       label: 'Asset Class 03 \u2022 Stock Market'     },
+  { name: 'opportunity', start: FOREX_FRAMES + STOCK_FRAMES, frames: OPPORTUNITY_FRAMES, label: 'The Opportunity'                        },
 ];
 
 function resolveSeq(globalIdx: number): { seq: SeqInfo; localIdx: number } {
@@ -60,7 +54,7 @@ function resolveSeq(globalIdx: number): { seq: SeqInfo; localIdx: number } {
   return { seq: SEQUENCES[0], localIdx: globalIdx };
 }
 
-const SOURCES = SEQUENCES.map((s) => ({ count: s.frames, src: s.getSrc }));
+const urlsFor = (tier: FrameTier): FrameSet => buildFrameSet(['forex', 'stock_market', 'opportunity'], tier);
 const PINNED = [0, 719] as const;
 const frameForProgress = (p: number, total: number): number =>
   p < FRAME_SCROLL_PORTION
@@ -248,7 +242,7 @@ export function ForexMarketScroll(): React.ReactElement {
   };
 
   const { sectionRef, stickyRef, canvasRef } = useFrameSequence({
-    sources: SOURCES,
+    urlsFor,
     pinned: PINNED,
     frameForProgress,
     background: '#050505',

@@ -1,15 +1,11 @@
 'use client';
 
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useRef, useState, type RefObject } from 'react';
 import { useLenis } from '@/components/providers/LenisProvider';
 import { onEveryFrame } from '@/lib/frame-loop';
 import { FrameSequenceEngine } from '@/lib/frame-sequence/engine';
 import { damp, sectionProgress } from '@/lib/frame-sequence/math';
-
-export interface FrameSource {
-  count: number;
-  src: (localIndex: number) => string;
-}
+import { detectFrameTier, type FrameSet, type FrameTier } from '@/lib/frame-sequence/sources';
 
 export interface FrameSequenceUpdate {
   progress: number;
@@ -18,8 +14,8 @@ export interface FrameSequenceUpdate {
 }
 
 export interface UseFrameSequenceOptions {
-  /** Concatenated into one global index space. Pass a module-level constant. */
-  sources: readonly FrameSource[];
+  /** Builds the global URL list for a tier. Pass a module-level function. */
+  urlsFor: (tier: FrameTier) => FrameSet;
   /** Integer 0..total-1 */
   frameForProgress: (progress: number, total: number) => number;
   /** Global indices fetched first and never evicted. */
@@ -64,6 +60,15 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
 
   const lenis = useLenis();
 
+  // Re-create the engine when the viewport flips between portrait and landscape (tier change).
+  const [tierEpoch, setTierEpoch] = useState(0);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-aspect-ratio: 4/5)');
+    const on = (): void => setTierEpoch((e) => e + 1);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+
   useEffect(() => {
     optsRef.current = options;
   });
@@ -86,16 +91,14 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
     const canvas = canvasRef.current;
     if (!section || !sticky || !canvas) return;
 
-    const sources = optsRef.current.sources;
-    const urls: string[] = [];
-    for (const s of sources) {
-      for (let i = 0; i < s.count; i++) urls.push(s.src(i));
-    }
+    const tier = detectFrameTier();
+    const set = optsRef.current.urlsFor(tier);
     const engine = new FrameSequenceEngine({
-      urls,
+      urls: set.urls,
+      fallbackUrls: set.fallback,
       pinned: optsRef.current.pinned ?? [],
       warm: optsRef.current.warm ?? [],
-      expectedSize: { w: 1920, h: 1080 },
+      expectedSize: set.expected,
       background: optsRef.current.background,
       onFrameReady: (i) => optsRef.current.onFrameReady?.(i),
     });
@@ -218,7 +221,7 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
       if (timeoutId !== null) clearTimeout(timeoutId);
       engine.destroy();
     };
-  }, []);
+  }, [tierEpoch]);
 
   return { sectionRef, stickyRef, canvasRef };
 }
