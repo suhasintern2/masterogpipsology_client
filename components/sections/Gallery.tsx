@@ -13,8 +13,6 @@ import { useRef, useState, useCallback } from 'react';
 import { motion, useSpring } from 'framer-motion';
 import { ResultsWall } from '@/components/art/ResultsWall';
 import { CertificateDisplay } from '@/components/art/CertificateDisplay';
-import { StatRow } from '@/components/ui/StatRow';
-import { ACHIEVEMENT_STATS } from '@/lib/content';
 import { SPRING_SLOW } from '@/lib/motion';
 
 export function Gallery(): React.ReactElement {
@@ -44,22 +42,14 @@ export function Gallery(): React.ReactElement {
       </h2>
 
       {/* Gallery frames */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 mb-12 md:mb-16">
-        <TiltFrame label="Verified cohort records">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        <TiltFrame label="Programme framework">
           <ResultsWall />
         </TiltFrame>
 
         <TiltFrame label="Certification and awards">
           <CertificateDisplay />
         </TiltFrame>
-      </div>
-
-      {/* Four-up stat bar */}
-      <div
-        className="p-6 md:p-8 rounded-2xl border"
-        style={{ borderColor: 'var(--hairline)' }}
-      >
-        <StatRow stats={ACHIEVEMENT_STATS} className="justify-around flex-wrap gap-y-6" />
       </div>
     </section>
   );

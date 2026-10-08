@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useCallback } from 'react';
-import { useLenis } from '@/components/providers/LenisProvider';
+import React, { useRef } from 'react';
+import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
 import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
 
 // ── Tunable constants ────────────────────────────────────────────────────────
@@ -10,10 +10,6 @@ const STOCK_FRAMES       = 240;
 const OPPORTUNITY_FRAMES = 240;
 const TOTAL_FRAMES       = FOREX_FRAMES + STOCK_FRAMES + OPPORTUNITY_FRAMES; // 720
 
-const SMOOTHING            = 10;
-const INITIAL_BATCH        = 30;
-const BATCH_SIZE           = 8;
-const DPR_CAP              = 2;
 const SCROLL_HEIGHT_VH     = 1500; // 500vh per phase + transition buffer
 const FRAME_SCROLL_PORTION = 0.70; // 0.00 .. 0.70 = 720 frames; 0.74 .. 0.88 = blend into video
 
@@ -48,26 +44,21 @@ function resolveSeq(globalIdx: number): { seq: SeqInfo; localIdx: number } {
   return { seq: SEQUENCES[0], localIdx: globalIdx };
 }
 
+const SOURCES = SEQUENCES.map((s) => ({ count: s.frames, src: s.getSrc }));
+const PINNED = [0, 239, 240, 479, 480, 719] as const;
+const frameForProgress = (p: number, total: number): number =>
+  p < FRAME_SCROLL_PORTION
+    ? Math.min(total - 1, Math.max(0, Math.floor((p / FRAME_SCROLL_PORTION) * total)))
+    : total - 1;
+
 // ── Component ────────────────────────────────────────────────────────────────
 export function ForexMarketScroll(): React.ReactElement {
-  const containerRef      = useRef<HTMLDivElement>(null);
-  const stickyViewportRef = useRef<HTMLDivElement>(null);
-  const canvasRef         = useRef<HTMLCanvasElement>(null);
-
   // Transition layers
   const heroContentRef  = useRef<HTMLDivElement>(null);
   const hudContainerRef = useRef<HTMLDivElement>(null);
-
-  // Image caches
-  const forexImages       = useRef<(HTMLImageElement | null)[]>(new Array(FOREX_FRAMES).fill(null));
-  const stockImages       = useRef<(HTMLImageElement | null)[]>(new Array(STOCK_FRAMES).fill(null));
-  const opportunityImages = useRef<(HTMLImageElement | null)[]>(new Array(OPPORTUNITY_FRAMES).fill(null));
-
-  const getCacheForSeq = useCallback((name: SeqName): (HTMLImageElement | null)[] => {
-    if (name === 'stock')       return stockImages.current;
-    if (name === 'opportunity') return opportunityImages.current;
-    return forexImages.current;
-  }, []);
+  const videoRef        = useRef<HTMLVideoElement | null>(null);
+  const videoStateRef   = useRef<'play' | 'pause'>('pause');
+  const armedRef        = useRef<boolean>(false);
 
   // HUD and overlay refs
   const hudLabelRef    = useRef<HTMLSpanElement>(null);
@@ -78,121 +69,51 @@ export function ForexMarketScroll(): React.ReactElement {
   const forexOverlayRef       = useRef<HTMLDivElement>(null);
   const stockOverlayRef       = useRef<HTMLDivElement>(null);
   const opportunityOverlayRef = useRef<HTMLDivElement>(null);
-  const activeSeqRef          = useRef<SeqName>('forex');
 
-  // Animation and layout state (zero React state re-renders)
-  const targetProgressRef  = useRef<number>(0);
-  const currentProgressRef = useRef<number>(0);
-  const lastDrawnFrameRef  = useRef<number>(-1);
-  const lastRafTimeRef     = useRef<number>(0);
-  const rafIdRef           = useRef<number>(0);
-  const isVisibleRef       = useRef<boolean>(false);
-  const isRunningRef       = useRef<boolean>(false);
-  const sectionTopRef      = useRef<number>(0);
-  const sectionHeightRef   = useRef<number>(0);
+  // Last written value per DOM property: every write is skipped unless it changed.
+  const last = useRef<Record<string, string>>({});
+  const put = (key: string, value: string, apply: (v: string) => void): void => {
+    if (last.current[key] !== value) {
+      last.current[key] = value;
+      apply(value);
+    }
+  };
 
-  const lenis = useLenis();
+  const getVideo = (): HTMLVideoElement | null => {
+    if (!videoRef.current) videoRef.current = heroContentRef.current?.querySelector('video') ?? null;
+    return videoRef.current;
+  };
 
-  const prefersReducedMotion =
-    typeof window !== 'undefined' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const setVideoState = (want: 'play' | 'pause'): void => {
+    const video = getVideo();
+    if (!video || videoStateRef.current === want) return;
+    videoStateRef.current = want;
+    if (want === 'play') {
+      video.play().catch(() => { videoStateRef.current = 'pause'; });
+    } else {
+      video.pause();
+    }
+  };
 
-  // ── Draw ──────────────────────────────────────────────────────────────────
-  const drawFrame = useCallback((globalIdx: number): void => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d', { alpha: false });
-    if (!ctx) return;
-
+  const onUpdate = ({ progress, frame }: FrameSequenceUpdate): void => {
+    const globalIdx = frame;
     const { seq, localIdx } = resolveSeq(globalIdx);
-    const cache = getCacheForSeq(seq.name);
-    const total = seq.frames;
 
-    let img: HTMLImageElement | null = cache[localIdx] ?? null;
+    // ── HUD text ──────────────────────────────────────────────────────────
+    put('hudFrame', String(localIdx + 1).padStart(3, '0'), (v) => { if (hudFrameRef.current) hudFrameRef.current.textContent = v; });
+    put('hudTotal', String(seq.frames), (v) => { if (hudTotalRef.current) hudTotalRef.current.textContent = v; });
+    put('hudLabel', seq.label, (v) => { if (hudLabelRef.current) hudLabelRef.current.textContent = v; });
+    const hp = localIdx / Math.max(seq.frames - 1, 1);
+    put('hudWidth', `${Math.round(hp * 100)}%`, (v) => { if (hudProgressRef.current) hudProgressRef.current.style.width = v; });
 
-    if (!img?.complete || !img.naturalWidth) {
-      for (let i = localIdx - 1; i >= 0; i--) {
-        const c = cache[i];
-        if (c?.complete && c.naturalWidth) { img = c; break; }
-      }
-    }
-    if (!img?.complete || !img.naturalWidth) {
-      for (let i = localIdx + 1; i < total; i++) {
-        const c = cache[i];
-        if (c?.complete && c.naturalWidth) { img = c; break; }
-      }
-    }
-    if (!img?.complete || !img.naturalWidth) {
-      const seqIdx = SEQUENCES.findIndex(s => s.name === seq.name);
-      outer: for (let s = seqIdx - 1; s >= 0; s--) {
-        const prevCache = getCacheForSeq(SEQUENCES[s].name);
-        for (let i = prevCache.length - 1; i >= 0; i--) {
-          const c = prevCache[i];
-          if (c?.complete && c.naturalWidth) { img = c; break outer; }
-        }
-      }
-    }
-    if (!img?.complete || !img.naturalWidth) return;
-
-    const cw = canvas.width, ch = canvas.height;
-    const iw = img.naturalWidth, ih = img.naturalHeight;
-    ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
-    const ratio = Math.max(cw / iw, ch / ih);
-    const dw = Math.round(iw * ratio), dh = Math.round(ih * ratio);
-    const dx = Math.round((cw - dw) / 2), dy = Math.round((ch - dh) / 2);
-    ctx.drawImage(img, 0, 0, iw, ih, dx, dy, dw, dh);
-  }, [getCacheForSeq]);
-
-  // ── Canvas resize ─────────────────────────────────────────────────────────
-  const syncCanvasSize = useCallback((): void => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
-    const w = Math.round(canvas.clientWidth * dpr);
-    const h = Math.round(canvas.clientHeight * dpr);
-    if (canvas.width !== w || canvas.height !== h) {
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d', { alpha: false });
-      if (ctx) { ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; }
-    }
-    drawFrame(lastDrawnFrameRef.current >= 0 ? lastDrawnFrameRef.current : 0);
-  }, [drawFrame]);
-
-  const cacheLayout = useCallback((): void => {
-    const el = containerRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    sectionTopRef.current    = rect.top + window.scrollY;
-    sectionHeightRef.current = rect.height;
-    syncCanvasSize();
-  }, [syncCanvasSize]);
-
-  // ── HUD & Overlay text updates ────────────────────────────────────────────
-  const updateHUD = useCallback((globalIdx: number, currentProgress: number): void => {
-    const { seq, localIdx } = resolveSeq(globalIdx);
-    if (hudFrameRef.current)    hudFrameRef.current.textContent    = String(localIdx + 1).padStart(3, '0');
-    if (hudTotalRef.current)    hudTotalRef.current.textContent    = String(seq.frames);
-    if (hudLabelRef.current)    hudLabelRef.current.textContent    = seq.label;
-    if (hudProgressRef.current) {
-      const p = localIdx / Math.max(seq.frames - 1, 1);
-      hudProgressRef.current.style.width = `${Math.round(p * 100)}%`;
-    }
-
-    if (activeSeqRef.current !== seq.name) {
-      activeSeqRef.current = seq.name;
-    }
-
-    // Smooth deterministic text opacities based on global progress
+    // ── Overlay opacities (deterministic from global frame) ───────────────
     let forexOp = 0;
     let stockOp = 0;
     let oppOp   = 0;
 
     if (globalIdx < 240) {
-      // Forex phase
       forexOp = globalIdx > 215 ? Math.max(0, 1 - (globalIdx - 215) / 24) : 1;
     } else if (globalIdx < 480) {
-      // Stock phase
       if (globalIdx < 265) {
         stockOp = (globalIdx - 240) / 25;
       } else if (globalIdx > 455) {
@@ -201,7 +122,6 @@ export function ForexMarketScroll(): React.ReactElement {
         stockOp = 1;
       }
     } else {
-      // Opportunity phase
       if (globalIdx < 505) {
         oppOp = (globalIdx - 480) / 25;
       } else if (globalIdx > 660) {
@@ -211,251 +131,73 @@ export function ForexMarketScroll(): React.ReactElement {
       }
     }
 
-    // Fade entire HUD out cleanly as doorway frame settles (zero visual clutter)
+    // Fade entire HUD out cleanly as doorway frame settles
     let hudMasterOp = 1;
-    if (currentProgress > 0.68) {
-      hudMasterOp = Math.max(0, 1 - (currentProgress - 0.68) / 0.05);
+    if (progress > 0.68) {
+      hudMasterOp = Math.max(0, 1 - (progress - 0.68) / 0.05);
     }
 
-    if (forexOverlayRef.current)       forexOverlayRef.current.style.opacity       = String(forexOp * hudMasterOp);
-    if (stockOverlayRef.current)       stockOverlayRef.current.style.opacity       = String(stockOp * hudMasterOp);
-    if (opportunityOverlayRef.current) opportunityOverlayRef.current.style.opacity = String(oppOp * hudMasterOp);
-    if (hudContainerRef.current)       hudContainerRef.current.style.opacity       = String(hudMasterOp);
-  }, []);
+    put('forexOp', (forexOp * hudMasterOp).toFixed(3), (v) => { if (forexOverlayRef.current) forexOverlayRef.current.style.opacity = v; });
+    put('stockOp', (stockOp * hudMasterOp).toFixed(3), (v) => { if (stockOverlayRef.current) stockOverlayRef.current.style.opacity = v; });
+    put('oppOp', (oppOp * hudMasterOp).toFixed(3), (v) => { if (opportunityOverlayRef.current) opportunityOverlayRef.current.style.opacity = v; });
+    put('hudOp', hudMasterOp.toFixed(3), (v) => { if (hudContainerRef.current) hudContainerRef.current.style.opacity = v; });
 
-  // ── Cinematic Doorway-to-Video Direct Blend Processor ─────────────────────
-  const processDoorwayTransition = useCallback((current: number): void => {
+    // ── Doorway-to-video blend ─────────────────────────────────────────────
     const canvas = canvasRef.current;
     const heroContent = heroContentRef.current;
-
-    if (!canvas || !heroContent) return;
-
-    if (current <= FRAME_SCROLL_PORTION) {
-      // 0.00 .. 0.70: Normal frame sequence playback
-      if (canvas.style.filter !== 'none') canvas.style.filter = 'none';
-      if (canvas.style.opacity !== '1') canvas.style.opacity = '1';
-      heroContent.style.pointerEvents = 'none';
-      return;
-    }
-
-    if (current <= 0.73) {
-      // 0.70 .. 0.73: Settle on sharp doorway final frame
-      if (canvas.style.filter !== 'none') canvas.style.filter = 'none';
-      if (canvas.style.opacity !== '1') canvas.style.opacity = '1';
-      heroContent.style.pointerEvents = 'none';
-      return;
-    }
-
-    // 0.73 .. 0.88: Doorway frame vanishes into the dark video with zero light bloom
-    const t = Math.max(0, Math.min(1, (current - 0.73) / 0.15));
-
-    // 1. Soft optical blur and dark fade (no light, dims into darkness of video)
-    const blurPx = Math.min(24, t * 36);
-    const brightnessVal = Math.max(0.1, 1 - t * 0.9);
-    canvas.style.filter = blurPx > 0.2
-      ? `blur(${blurPx.toFixed(1)}px) brightness(${brightnessVal.toFixed(2)})`
-      : 'none';
-
-    // 2. Canvas image opacity vanishes from 1.0 to 0.0 directly revealing the underlying video
-    const canvasOp = Math.max(0, 1 - t);
-    canvas.style.opacity = canvasOp.toFixed(3);
-
-    // 3. Enable pointer events on hero once the doorway has cleared
-    if (t >= 0.90) {
-      heroContent.style.pointerEvents = 'auto';
-    } else {
-      heroContent.style.pointerEvents = 'none';
-    }
-  }, []);
-
-  // ── rAF loop ──────────────────────────────────────────────────────────────
-  const startLoop = useCallback((): void => {
-    if (isRunningRef.current) return;
-    isRunningRef.current   = true;
-    lastRafTimeRef.current = performance.now();
-
-    const loop = (now: number): void => {
-      const dt = Math.min((now - lastRafTimeRef.current) / 1000, 0.05);
-      lastRafTimeRef.current = now;
-
-      const target  = targetProgressRef.current;
-      let   current = currentProgressRef.current;
-
-      current = prefersReducedMotion
-        ? target
-        : current + (target - current) * (1 - Math.exp(-dt * SMOOTHING));
-
-      currentProgressRef.current = current;
-
-      // Map progress to frame index (clamped to 719 for doorway transition)
-      let globalIdx: number;
-      if (current < FRAME_SCROLL_PORTION) {
-        const frameP = current / FRAME_SCROLL_PORTION;
-        globalIdx = Math.min(TOTAL_FRAMES - 1, Math.max(0, Math.floor(frameP * TOTAL_FRAMES)));
+    if (canvas && heroContent) {
+      if (progress <= 0.73) {
+        // 0.00 .. 0.73: normal playback, then settle on the sharp doorway frame
+        put('filter', 'none', (v) => { canvas.style.filter = v; });
+        put('opacity', '1', (v) => { canvas.style.opacity = v; });
+        put('pe', 'none', (v) => { heroContent.style.pointerEvents = v; });
       } else {
-        // Doorway final frame remains locked during the transition
-        globalIdx = TOTAL_FRAMES - 1;
+        // 0.73 .. 0.88: doorway frame vanishes into the dark video with zero light bloom
+        const t = Math.max(0, Math.min(1, (progress - 0.73) / 0.15));
+        const blurPx = Math.min(24, t * 36);
+        const brightnessVal = Math.max(0.1, 1 - t * 0.9);
+        put(
+          'filter',
+          blurPx > 0.2 ? `blur(${blurPx.toFixed(1)}px) brightness(${brightnessVal.toFixed(2)})` : 'none',
+          (v) => { canvas.style.filter = v; },
+        );
+        put('opacity', Math.max(0, 1 - t).toFixed(3), (v) => { canvas.style.opacity = v; });
+        put('pe', t >= 0.90 ? 'auto' : 'none', (v) => { heroContent.style.pointerEvents = v; });
       }
-
-      if (globalIdx !== lastDrawnFrameRef.current) {
-        drawFrame(globalIdx);
-        lastDrawnFrameRef.current = globalIdx;
-      }
-
-      updateHUD(globalIdx, current);
-      processDoorwayTransition(current);
-
-      if (Math.abs(target - current) < 0.0001) {
-        isRunningRef.current = false;
-        return;
-      }
-
-      rafIdRef.current = requestAnimationFrame(loop);
-    };
-
-    rafIdRef.current = requestAnimationFrame(loop);
-  }, [drawFrame, updateHUD, processDoorwayTransition, prefersReducedMotion]);
-
-  const stopLoop = useCallback((): void => {
-    cancelAnimationFrame(rafIdRef.current);
-    isRunningRef.current = false;
-  }, []);
-
-  // ── Scroll handler ────────────────────────────────────────────────────────
-  const onScroll = useCallback((): void => {
-    const scrollY    = window.scrollY;
-    const top        = sectionTopRef.current;
-    const height     = sectionHeightRef.current;
-    const viewportH  = window.innerHeight;
-    const scrollable = height - viewportH;
-    if (scrollable <= 0) return;
-
-    const progress = Math.max(0, Math.min(1, (scrollY - top) / scrollable));
-    targetProgressRef.current = progress;
-    if (isVisibleRef.current) startLoop();
-  }, [startLoop]);
-
-  // ── Progressive preloader ─────────────────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadImg = (src: string, cache: (HTMLImageElement | null)[], idx: number): Promise<void> =>
-      new Promise((resolve) => {
-        const img = new Image();
-        img.src   = src;
-        img.onload = async () => {
-          if (cancelled) return resolve();
-          try { if ('decode' in img) await img.decode(); } catch (_) { /* noop */ }
-          cache[idx] = img;
-          resolve();
-        };
-        img.onerror = () => resolve();
-      });
-
-    const loadRange = (start: number, end: number, cache: (HTMLImageElement | null)[], getSrc: (i: number) => string): Promise<void> => {
-      const batch: Promise<void>[] = [];
-      for (let i = start; i < end; i++) batch.push(loadImg(getSrc(i), cache, i));
-      return Promise.all(batch).then(() => undefined);
-    };
-
-    const run = async (): Promise<void> => {
-      // Forex frame 0 – show immediately
-      await loadImg(getForexSrc(0), forexImages.current, 0);
-      if (cancelled) return;
-      cacheLayout();
-      drawFrame(0);
-      lastDrawnFrameRef.current = 0;
-      updateHUD(0, 0);
-
-      // Pre-warm initial frames and the critical doorway final frame
-      loadImg(getStockSrc(0), stockImages.current, 0);
-      loadImg(getOpportunitySrc(0), opportunityImages.current, 0);
-      loadImg(getOpportunitySrc(OPPORTUNITY_FRAMES - 1), opportunityImages.current, OPPORTUNITY_FRAMES - 1);
-
-      // Initial forex batch
-      const forexInitEnd = Math.min(INITIAL_BATCH, FOREX_FRAMES);
-      await loadRange(1, forexInitEnd, forexImages.current, getForexSrc);
-      if (cancelled) return;
-
-      // Complete first half of forex
-      let fi = forexInitEnd;
-      while (fi < FOREX_FRAMES && !cancelled) {
-        const end = Math.min(fi + BATCH_SIZE, FOREX_FRAMES);
-        await loadRange(fi, end, forexImages.current, getForexSrc);
-        fi = end;
-        if (fi >= FOREX_FRAMES / 2) break;
-      }
-
-      // Stock initial batch parallel with remaining forex
-      const stockInitEnd     = Math.min(INITIAL_BATCH, STOCK_FRAMES);
-      const stockInitPromise = loadRange(1, stockInitEnd, stockImages.current, getStockSrc);
-      while (fi < FOREX_FRAMES && !cancelled) {
-        const end = Math.min(fi + BATCH_SIZE, FOREX_FRAMES);
-        await loadRange(fi, end, forexImages.current, getForexSrc);
-        fi = end;
-      }
-      await stockInitPromise;
-      if (cancelled) return;
-
-      // Complete stock
-      let si = stockInitEnd;
-      while (si < STOCK_FRAMES && !cancelled) {
-        const end = Math.min(si + BATCH_SIZE, STOCK_FRAMES);
-        await loadRange(si, end, stockImages.current, getStockSrc);
-        si = end;
-      }
-      if (cancelled) return;
-
-      // Opportunity initial batch
-      const oppInitEnd = Math.min(INITIAL_BATCH, OPPORTUNITY_FRAMES);
-      await loadRange(1, oppInitEnd, opportunityImages.current, getOpportunitySrc);
-      if (cancelled) return;
-
-      // Complete opportunity
-      let oi = oppInitEnd;
-      while (oi < OPPORTUNITY_FRAMES - 1 && !cancelled) {
-        const end = Math.min(oi + BATCH_SIZE, OPPORTUNITY_FRAMES - 1);
-        await loadRange(oi, end, opportunityImages.current, getOpportunitySrc);
-        oi = end;
-      }
-    };
-
-    run().catch(() => undefined);
-    return () => { cancelled = true; };
-  }, [cacheLayout, drawFrame, updateHUD]);
-
-  useEffect(() => {
-    const ro = new ResizeObserver(() => cacheLayout());
-    const el = containerRef.current;
-    if (el) ro.observe(el);
-    return () => ro.disconnect();
-  }, [cacheLayout]);
-
-  useEffect(() => {
-    const io = new IntersectionObserver(([entry]) => {
-      isVisibleRef.current = entry.isIntersecting;
-      if (!entry.isIntersecting) stopLoop();
-    }, { threshold: 0 });
-    const el = containerRef.current;
-    if (el) io.observe(el);
-    return () => io.disconnect();
-  }, [stopLoop]);
-
-  useEffect(() => {
-    if (lenis) {
-      lenis.on('scroll', onScroll);
-      return () => { lenis.off('scroll', onScroll); };
+      // The canvas is opaque before 0.73, so the hero layer can stay hidden until then.
+      put('vis', progress >= 0.70 ? 'visible' : 'hidden', (v) => { heroContent.style.visibility = v; });
     }
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, [lenis, onScroll]);
 
-  useEffect(() => () => stopLoop(), [stopLoop]);
+    // ── Background video: arm late, play only near the doorway ────────────
+    const video = getVideo();
+    if (video) {
+      if (progress >= 0.45 && !armedRef.current) {
+        armedRef.current = true;
+        video.preload = 'auto';
+        video.load();
+      }
+      if (progress >= 0.62) setVideoState('play');
+      else if (progress < 0.55) setVideoState('pause');
+    }
+  };
+
+  const onActiveChange = (visible: boolean): void => {
+    if (!visible) setVideoState('pause');
+  };
+
+  const { sectionRef, stickyRef, canvasRef } = useFrameSequence({
+    sources: SOURCES,
+    pinned: PINNED,
+    frameForProgress,
+    background: '#050505',
+    onUpdate,
+    onActiveChange,
+  });
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <section
-      ref={containerRef}
+      ref={sectionRef}
       id="forex-sequence"
       aria-label="Forex, Stock Market and Opportunity Interactive Scroll Sequence"
       className="relative w-full z-20"
@@ -466,7 +208,7 @@ export function ForexMarketScroll(): React.ReactElement {
     >
       {/* Sticky cinematic viewport: 720 frames merge directly into the video hero */}
       <div
-        ref={stickyViewportRef}
+        ref={stickyRef}
         className="sticky top-0 w-full overflow-hidden select-none z-20"
         style={{
           height: '100dvh',
@@ -478,9 +220,9 @@ export function ForexMarketScroll(): React.ReactElement {
         <div
           ref={heroContentRef}
           className="absolute inset-0 z-0"
-          style={{ willChange: 'opacity', pointerEvents: 'none' }}
+          style={{ pointerEvents: 'none', visibility: 'hidden' }}
         >
-          <IntelligenceHero />
+          <IntelligenceHero autoPlayVideo={false} videoPreload="none" />
         </div>
 
         {/* Layer 1: Single canvas – drawing surface for the 720 cinematic frames */}
@@ -505,13 +247,13 @@ export function ForexMarketScroll(): React.ReactElement {
         >
           {/* Top Bar */}
           <div className="flex items-center justify-between">
-            <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border border-[#D4AF37]/35 bg-[#FAF6ED]/85 backdrop-blur-md shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse" />
+            <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border border-[#D4AF37]/35 bg-[#FAF6ED]/92 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-[#D4AF37] motion-safe:animate-pulse" />
               <span ref={hudLabelRef} className="text-[11px] md:text-xs font-mono tracking-widest uppercase text-[#8C6D23] font-semibold">
                 Asset Class 02 &bull; Foreign Exchange
               </span>
             </div>
-            <div className="flex items-center gap-3 px-4 py-1.5 rounded-full border border-black/10 bg-[#FAF6ED]/80 backdrop-blur-md shadow-xs">
+            <div className="flex items-center gap-3 px-4 py-1.5 rounded-full border border-black/10 bg-[#FAF6ED]/92 shadow-xs">
               <span className="text-[11px] font-mono text-[#7A756D]">FRAME</span>
               <span ref={hudFrameRef} className="text-xs font-mono font-bold text-[#0E0F14] min-w-[28px] text-right">001</span>
               <span className="text-[10px] font-mono text-[#B0AAA0]">/</span>
@@ -547,9 +289,9 @@ export function ForexMarketScroll(): React.ReactElement {
                 The foreign exchange market moves $7.5 trillion a day. Where central banks, sovereign wealth funds, and interbank algorithms dictate institutional order flow.
               </p>
               <div className="mt-6 flex flex-wrap justify-end gap-2.5">
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">EUR/USD &bull; 1.0842 <strong className="text-emerald-600">+0.12%</strong></span>
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">GBP/JPY &bull; 191.65 <strong className="text-rose-600">-0.34%</strong></span>
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">XAU/USD &bull; $2,384 <strong className="text-emerald-600">+0.87%</strong></span>
+                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">EUR/USD &bull; MAJOR</span>
+                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">GBP/JPY &bull; CROSS</span>
+                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">XAU/USD &bull; GOLD</span>
               </div>
             </div>
 
@@ -575,9 +317,9 @@ export function ForexMarketScroll(): React.ReactElement {
                 Equities, indices, and the bull&ndash;bear cycle. Where institutional block orders, earnings catalysts, and central bank policy converge into price action.
               </p>
               <div className="mt-6 flex flex-wrap justify-end gap-2.5">
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">S&amp;P 500 &bull; 5,204 <strong className="text-emerald-600">+0.54%</strong></span>
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">NASDAQ &bull; 16,340 <strong className="text-emerald-600">+0.78%</strong></span>
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">GOLD &bull; $2,384 <strong className="text-emerald-600">+0.87%</strong></span>
+                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">S&amp;P 500 &bull; INDEX</span>
+                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">NASDAQ &bull; INDEX</span>
+                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">GOLD &bull; COMMODITY</span>
               </div>
             </div>
 
@@ -615,7 +357,7 @@ export function ForexMarketScroll(): React.ReactElement {
           <div className="flex items-end justify-between pt-4 border-t border-black/10">
             <div className="text-xs font-mono text-[#7A756D] tracking-wide">MOP &bull; 1920&times;1080 3D SEQUENCE</div>
             <div className="flex items-center gap-2 text-xs font-mono text-[#8C6D23] font-medium">
-              <span className="inline-block animate-bounce">↓</span>
+              <span className="inline-block motion-safe:animate-bounce">↓</span>
               <span>SCROLL TO ADVANCE FRAMES</span>
             </div>
           </div>

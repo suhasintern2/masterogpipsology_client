@@ -1,0 +1,116 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  sectionProgress,
+  damp,
+  computeBackingSize,
+  coverCrop,
+  coverDest,
+  nearestAvailable,
+  fetchScore,
+  pickNextFetch,
+  decodeWindow,
+  pickNextDecode,
+  bitmapBudget,
+} from '../lib/frame-sequence/math.ts';
+
+test('sectionProgress', () => {
+  assert.equal(sectionProgress(0, 100, 1000, 500), 0);
+  assert.equal(sectionProgress(350, 100, 1000, 500), 0.5);
+  assert.equal(sectionProgress(9999, 100, 1000, 500), 1);
+  assert.equal(sectionProgress(300, 100, 500, 500), 0);
+  assert.equal(sectionProgress(300, 100, 400, 500), 0);
+});
+
+test('damp', () => {
+  assert.equal(damp(0, 1, 0, 0.016), 1);
+  const v = damp(0, 1, 10, 0.016);
+  assert.ok(v > 0 && v < 1);
+  const two = damp(damp(0, 1, 10, 0.008), 1, 10, 0.008);
+  assert.ok(Math.abs(two - v) < 1e-9);
+  assert.equal(damp(0.999995, 1, 10, 0.016), 1);
+});
+
+test('computeBackingSize', () => {
+  const src = { w: 1920, h: 1080 };
+  assert.deepEqual(computeBackingSize({ w: 1440, h: 900 }, src, 2), { w: 1728, h: 1080 });
+  const p = computeBackingSize({ w: 390, h: 844 }, src, 3);
+  assert.ok(Math.abs(p.w - 499) <= 1 && Math.abs(p.h - 1080) <= 1);
+  assert.deepEqual(computeBackingSize({ w: 2560, h: 1440 }, src, 2), { w: 2560, h: 1440 });
+  const one = computeBackingSize({ w: 1440, h: 900 }, src, 1);
+  assert.ok(one.w <= 1440 && one.h <= 900);
+});
+
+test('coverCrop', () => {
+  const src = { w: 1920, h: 1080 };
+  assert.deepEqual(coverCrop(src, { w: 1728, h: 1080 }), { x: 96, y: 0, w: 1728, h: 1080 });
+  const p = coverCrop(src, { w: 499, h: 1080 });
+  assert.ok(Math.abs(p.x - 710) <= 1 && Math.abs(p.w - 499) <= 1);
+  for (const dest of [{ w: 499, h: 1080 }, { w: 1728, h: 1080 }, { w: 1000, h: 1000 }, { w: 2560, h: 1440 }]) {
+    const c = coverCrop(src, dest);
+    assert.ok(c.x + c.w <= src.w && c.y + c.h <= src.h && c.w >= 1 && c.h >= 1);
+    for (const k of ['x', 'y', 'w', 'h']) assert.ok(Number.isInteger(c[k]));
+  }
+});
+
+test('coverDest', () => {
+  assert.deepEqual(coverDest({ w: 1728, h: 1080 }, { w: 1728, h: 1080 }), { x: 0, y: 0, w: 1728, h: 1080 });
+  const d = coverDest({ w: 1920, h: 1080 }, { w: 1000, h: 1000 });
+  assert.equal(d.h, 1000);
+  assert.ok(Math.abs(d.w - 1778) <= 1);
+  assert.ok(Math.abs(d.x + 389) <= 1);
+});
+
+test('nearestAvailable', () => {
+  assert.equal(nearestAvailable([0, 0, 1, 0, 1], 3), 2);
+  assert.equal(nearestAvailable([0, 0, 0], 1), -1);
+  assert.equal(nearestAvailable([0, 1, 1], 1), 1);
+});
+
+test('fetchScore', () => {
+  assert.ok(fetchScore(105, 100, 1, 12) < 1_000_000);
+  assert.ok(fetchScore(200, 100, 1, 12) < 1_000_000 === false);
+  assert.ok(fetchScore(208, 100, 1, 12) < fetchScore(201, 100, 1, 12)); // stride 16 vs stride 1
+  assert.ok(fetchScore(95, 100, 1, 12) > fetchScore(105, 100, 1, 12));
+  assert.ok(fetchScore(105, 100, -1, 12) > fetchScore(95, 100, -1, 12));
+});
+
+test('pickNextFetch', () => {
+  const state = new Uint8Array(240);
+  assert.equal(pickNextFetch(state, [0, 239], 100, 1, 12, false), 0);
+  state[0] = 2;
+  assert.equal(pickNextFetch(state, [0, 239], 100, 1, 12, false), 239);
+  state[239] = 2;
+  assert.equal(pickNextFetch(state, [0, 239], 100, 1, 12, false), -1);
+  const first = pickNextFetch(state, [0, 239], 100, 1, 12, true);
+  assert.ok(first >= 100 && first <= 112);
+});
+
+test('decodeWindow', () => {
+  assert.deepEqual(decodeWindow(5, 1, 240, 20, 10), [0, 25]);
+  assert.deepEqual(decodeWindow(235, 1, 240, 20, 10), [225, 239]);
+  assert.deepEqual(decodeWindow(100, -1, 240, 20, 10), [80, 110]);
+  assert.deepEqual(decodeWindow(100, 1, 240, 20, 10), [90, 120]);
+});
+
+test('pickNextDecode', () => {
+  const needs = new Uint8Array(240);
+  assert.equal(pickNextDecode(needs, [0, 239], 100, 1, 90, 120), -1);
+  needs[95] = 1; needs[105] = 1; needs[130] = 1;
+  assert.equal(pickNextDecode(needs, [], 100, 1, 90, 120), 105);
+  assert.equal(pickNextDecode(needs, [], 100, -1, 90, 120), 95);
+  needs[130] = 1;
+  needs[105] = 0; needs[95] = 0;
+  assert.equal(pickNextDecode(needs, [], 100, 1, 90, 120), -1); // 130 outside window
+  needs[239] = 1;
+  assert.equal(pickNextDecode(needs, [0, 239], 100, 1, 90, 120), 239);
+  assert.equal(pickNextDecode(new Uint8Array(10), [], 5, 1, 1, 0), -1);
+});
+
+test('bitmapBudget', () => {
+  assert.equal(bitmapBudget({ w: 1728, h: 1080 }, 8, 240), 53);
+  assert.equal(bitmapBudget({ w: 1728, h: 1080 }, undefined, 240), bitmapBudget({ w: 1728, h: 1080 }, 4, 240));
+  assert.equal(bitmapBudget({ w: 3000, h: 3000 }, 1, 240), 16);
+  assert.equal(bitmapBudget({ w: 100, h: 100 }, 8, 240), 240);
+  assert.equal(bitmapBudget({ w: 100, h: 100 }, 8, 100), 100);
+});

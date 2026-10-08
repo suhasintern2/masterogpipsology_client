@@ -6,7 +6,13 @@ import styles from './IntelligenceHero.module.css';
 
 const EASING = [0.22, 1, 0.36, 1] as const;
 
-export function IntelligenceHero(): React.ReactElement {
+export function IntelligenceHero({
+  autoPlayVideo = true,
+  videoPreload = 'auto',
+}: {
+  autoPlayVideo?: boolean;
+  videoPreload?: 'auto' | 'metadata' | 'none';
+} = {}): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -14,10 +20,10 @@ export function IntelligenceHero(): React.ReactElement {
 
   // Play video on mount / view
   useEffect(() => {
-    if (videoRef.current) {
+    if (autoPlayVideo && videoRef.current) {
       videoRef.current.play().catch(() => {});
     }
-  }, []);
+  }, [autoPlayVideo]);
 
   // Close menu on Escape or screen resize to landscape
   useEffect(() => {
@@ -57,11 +63,11 @@ export function IntelligenceHero(): React.ReactElement {
         <video
           ref={videoRef}
           className={styles.plateVideo}
-          autoPlay
+          autoPlay={autoPlayVideo}
           muted
           loop
           playsInline
-          preload="auto"
+          preload={videoPreload}
           aria-hidden="true"
         >
           <source

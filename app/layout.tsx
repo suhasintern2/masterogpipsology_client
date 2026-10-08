@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     apple: '/main_logo.png',
   },
   description:
-    'A 12-week live trading programme covering risk architecture, market structure, order flow and execution psychology. Forex, equities and crypto. Cohort 14 starts 6 January 2025.',
+    'Education before execution. A 12-week live trading programme covering risk architecture, market structure, order flow and execution psychology. Forex, equities and crypto.',
   keywords: [
     'trading education',
     'forex trading',
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     url: 'https://masterofpipsology.com',
     title: 'Master of Pipsology — Professional Trading Education',
     description:
-      'Join 1,400+ graduates who trade with institutional precision. Cohort 14 starts 6 January 2025.',
+      'Education before execution. A 12-week live trading programme.',
     siteName: 'Master of Pipsology',
     images: [
       {
@@ -68,7 +68,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Master of Pipsology — Professional Trading Education',
     description:
-      'A 12-week live trading programme. 1,400+ graduates. Cohort 14 starts 6 January 2025.',
+      'Education before execution. A 12-week live trading programme covering risk, structure, order flow and execution.',
     images: ['/og-image.png'],
   },
   robots: {

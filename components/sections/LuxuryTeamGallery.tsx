@@ -316,8 +316,8 @@ export function LuxuryTeamGallery(): React.ReactElement {
                   </div>
 
                   <div className="pt-4 border-t border-white/[0.08] flex items-center justify-between text-xs font-mono text-[#A59D91]">
-                    <span>Experience: <strong className="text-[#FAF1DE]">{selectedMember.experience}</strong></span>
-                    <span>Performance: <strong className="text-[#E8CA65]">{selectedMember.metric}</strong></span>
+                    <span>Focus: <strong className="text-[#FAF1DE]">{selectedMember.tags[0]}</strong></span>
+                    <span>Discipline: <strong className="text-[#E8CA65]">{selectedMember.tags[1]}</strong></span>
                   </div>
                 </div>
               </div>
@@ -410,13 +410,6 @@ function CreativeFacultyCard({ member, index, onInspect }: CreativeFacultyCardPr
           </span>
         </div>
 
-        {/* Experience Pin */}
-        <div className="absolute top-4 right-4 z-20">
-          <span className="px-2.5 py-1 rounded-md text-[10px] font-mono text-[#FAF1DE] bg-white/[0.08] backdrop-blur-md border border-white/[0.14]">
-            {member.experience}
-          </span>
-        </div>
-
         {/* Floating Name & Title Inside Portrait */}
         <div className="absolute bottom-4 left-5 right-5 z-20">
           <div className="text-[11px] uppercase tracking-widest text-[#D4AF37] font-body font-semibold mb-1">
@@ -436,7 +429,7 @@ function CreativeFacultyCard({ member, index, onInspect }: CreativeFacultyCardPr
 
         <div className="flex items-center justify-between pt-2 border-t border-white/[0.06]">
           <span className="text-xs font-mono text-[#D8B45E]">
-            {member.metric}
+            {member.tags[0]}
           </span>
           <span className="text-xs font-body font-medium text-[#FAF1DE] group-hover:translate-x-1 transition-transform flex items-center gap-1.5">
             Dossier

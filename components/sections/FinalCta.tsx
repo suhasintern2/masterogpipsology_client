@@ -4,7 +4,7 @@ import React from 'react';
 // Sits at the darkest point of the scroll transition (~100%).
 // Server Component.
 
-import { FINAL_CTA_HEADLINE, FINAL_CTA_SUBLINE, CTA_PRIMARY, CTA_SECONDARY } from '@/lib/content';
+import { FINAL_CTA_HEADLINE, CTA_PRIMARY, CTA_SECONDARY } from '@/lib/content';
 import { Button } from '@/components/ui/Button';
 
 export function FinalCta(): React.ReactElement {
@@ -40,13 +40,6 @@ export function FinalCta(): React.ReactElement {
           >
             {FINAL_CTA_HEADLINE}
           </h2>
-
-          <p
-            className="text-base md:text-md font-body body-max"
-            style={{ color: 'var(--text-muted)' }}
-          >
-            {FINAL_CTA_SUBLINE}
-          </p>
 
           <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
             <Button

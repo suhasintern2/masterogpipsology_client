@@ -17,19 +17,15 @@ import { useRef } from 'react';
 import Image from 'next/image';
 import { motion, useInView, useScroll, useTransform, useSpring } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { StatRow } from '@/components/ui/StatRow';
 import { TypingHeading } from '@/components/ui/TypingHeading';
 import {
-  COHORT_BADGE,
   HERO_SUBLINE,
-  HERO_STATS,
   CTA_PRIMARY,
   CTA_SECONDARY,
 } from '@/lib/content';
 import {
   fadeUpVariants,
   brassRuleVariants,
-  SPRING_RESPONSIVE,
 } from '@/lib/motion';
 
 export function Hero(): React.ReactElement {
@@ -261,7 +257,7 @@ export function Hero(): React.ReactElement {
                 style={{ backgroundColor: 'var(--accent)' }}
                 aria-hidden="true"
               />
-              {COHORT_BADGE}
+              Education before execution
             </span>
           </motion.div>
 
@@ -315,18 +311,6 @@ export function Hero(): React.ReactElement {
             <Button as="a" href="#curriculum" size="lg" variant="outline" id="hero-cta-secondary">
               {CTA_SECONDARY}
             </Button>
-          </motion.div>
-
-          {/* Stats */}
-          <motion.div
-            custom={6}
-            variants={fadeUpVariants}
-            initial="hidden"
-            animate={inView ? 'visible' : 'hidden'}
-            className="pt-1"
-            transition={{ ...SPRING_RESPONSIVE, delay: 0.1 }}
-          >
-            <StatRow stats={HERO_STATS} />
           </motion.div>
         </div>
       </motion.div>

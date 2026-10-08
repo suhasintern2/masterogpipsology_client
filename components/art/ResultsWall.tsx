@@ -7,7 +7,7 @@ import React from 'react';
 
 import { motion, useInView } from 'framer-motion';
 import { useRef } from 'react';
-import { RESULTS_WALL_RECORDS } from '@/lib/content';
+import { PROGRAMME_PILLARS } from '@/lib/content';
 import { fadeUpVariants } from '@/lib/motion';
 
 // Mini sparkline points (pre-calculated for each record)
@@ -45,13 +45,13 @@ export function ResultsWall(): React.ReactElement {
           className="text-xs font-body font-medium uppercase tracking-widest"
           style={{ color: 'var(--accent)' }}
         >
-          Verified results
+          Programme framework
         </span>
       </motion.div>
 
       {/* Record tiles */}
       <div className="grid grid-cols-2 gap-2">
-        {RESULTS_WALL_RECORDS.map((record, i) => (
+        {PROGRAMME_PILLARS.map((record, i) => (
           <motion.div
             key={record.label}
             custom={i + 1}
@@ -61,7 +61,7 @@ export function ResultsWall(): React.ReactElement {
             className="rounded-lg p-3 border"
             style={{ borderColor: 'var(--hairline)' }}
             role="figure"
-            aria-label={`${record.label}: ${record.value}`}
+            aria-label={`${record.value} ${record.label}`}
           >
             {/* Mini sparkline */}
             <svg
@@ -107,12 +107,12 @@ export function ResultsWall(): React.ReactElement {
           className="text-xs font-body mb-2"
           style={{ color: 'var(--text-muted)' }}
         >
-          Cohort 12 — composite equity curve
+          Illustrative equity curve
         </div>
         <svg
           viewBox="0 0 270 90"
           className="w-full"
-          aria-label="Equity curve showing steady account growth over the 12-week programme"
+          aria-label="Illustrative equity curve (decorative, not performance data)"
           role="img"
           preserveAspectRatio="none"
         >
