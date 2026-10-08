@@ -266,6 +266,7 @@ export function ForexMarketScroll(): React.ReactElement {
       className="relative w-full z-20"
       style={{
         height: `${SCROLL_HEIGHT_VH}vh`,
+        marginTop: '-100vh',
         backgroundColor: 'transparent',
       }}
     >
