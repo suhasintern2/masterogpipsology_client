@@ -1,6 +1,17 @@
 // Pure layout for the sculpture interlude: instanced blocks that assemble into
 // 7 gold candlesticks. Deterministic for a given seed.
-import { mulberry32 } from './prng.ts';
+// Local copy of mulberry32 (lib/three/prng.ts): relative '.ts' imports are rejected by tsc here,
+// and node --test needs this file to be self-contained.
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 export interface SculptureLayout {
   count: number;
