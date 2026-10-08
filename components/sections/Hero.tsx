@@ -12,14 +12,12 @@ import heroImg from '@/hero.png';
 import { motion, useInView } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { TypingHeading } from '@/components/ui/TypingHeading';
-import { JoinCapsules } from '@/components/ui/JoinCapsules';
 import { gsap, useGSAP } from '@/lib/gsap';
 import { useDeviceTier } from '@/lib/device-tier';
 import { loadProgress } from '@/lib/load-progress';
 import type { TypingSegment } from '@/lib/typing';
 import {
   HERO_SUBLINE,
-  CTA_PRIMARY,
   CTA_SECONDARY,
 } from '@/lib/content';
 import {
@@ -135,31 +133,6 @@ export function Hero(): React.ReactElement {
         {/* Text column */}
         <div className="max-w-xl lg:max-w-2xl flex flex-col gap-5 sm:gap-6">
 
-          {/* Cohort badge */}
-          <motion.div
-            custom={0}
-            variants={fadeUpVariants}
-            initial="hidden"
-            animate={inView ? 'visible' : 'hidden'}
-            className="inline-flex self-start"
-          >
-            <span
-              className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-body font-medium"
-              style={{
-                borderColor: 'var(--accent)',
-                color: 'var(--accent)',
-                backgroundColor: 'color-mix(in srgb, var(--accent) 12%, transparent)',
-              }}
-            >
-              <span
-                className="pulse-dot w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: 'var(--accent)' }}
-                aria-hidden="true"
-              />
-              Education before execution
-            </span>
-          </motion.div>
-
           {/* Headline */}
           <TypingHeading
             as="h1"
@@ -200,9 +173,7 @@ export function Hero(): React.ReactElement {
             animate={inView ? 'visible' : 'hidden'}
             className="flex flex-col gap-3 pt-1"
           >
-            <span className="font-body text-[11px] tracking-[0.28em] uppercase" style={{ color: 'rgba(243,236,224,0.72)' }}>{CTA_PRIMARY}</span>
             <div className="flex flex-wrap items-center gap-3">
-              <JoinCapsules tone="dark" size="lg" idPrefix="hero-join" className="contents" />
               <Button as="a" href="#curriculum" size="lg" variant="outline" id="hero-cta-secondary">
                 {CTA_SECONDARY}
               </Button>
