@@ -866,3 +866,27 @@ html.js .th-c.is-on, html.js .th--static .th-c { opacity: 1; animation: none; }
 .hl-scrim { pointer-events: none; will-change: opacity;
   background: linear-gradient(108deg, rgba(14,14,18,.68) 0%, rgba(14,14,18,.44) 38%, rgba(14,14,18,.10) 62%, transparent 80%); }
 .hl-bottom { pointer-events: none; will-change: opacity; background: linear-gradient(to bottom, transparent 0%, var(--bg) 100%); }
+
+/* ─── Revisions 2: gilded seam ─── */
+.seam { position: relative; z-index: 5; height: 0; pointer-events: none; }
+.seam__band { position: absolute; left: 0; right: 0; top: -70px; height: 140px; overflow: hidden; }
+.seam__line { position: absolute; top: 50%; height: 1px; width: 50%; margin-top: -.5px; transform: scaleX(0); will-change: transform; }
+.seam__line--r { left: 50%; transform-origin: 0 50%;
+  background: linear-gradient(90deg, #F1D98A, rgba(212, 175, 55, .55) 60%, rgba(212, 175, 55, 0)); }
+.seam__line--l { right: 50%; transform-origin: 100% 50%;
+  background: linear-gradient(270deg, #F1D98A, rgba(212, 175, 55, .55) 60%, rgba(212, 175, 55, 0)); }
+.seam__spark { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; opacity: 0; will-change: transform, opacity;
+  background: radial-gradient(circle, #fff 0 22%, #F6E3A1 42%, rgba(212, 175, 55, 0) 70%); }
+.seam__mark { position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; transform: scale(0);
+  background: linear-gradient(135deg, #F6E3A1, #D4AF37 50%, #8C6D23); box-shadow: 0 0 12px rgba(212, 175, 55, .55); }
+.seam__ring { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%;
+  border: 1px solid rgba(232, 202, 101, .8); opacity: 0; }
+.seam__bloom { position: absolute; left: 50%; top: 50%; width: min(70vw, 900px); height: 120px;
+  margin: -60px 0 0 calc(min(70vw, 900px) / -2); opacity: 0; transform: scaleX(.3);
+  background: radial-gradient(ellipse at center, rgba(212, 175, 55, .28), rgba(212, 175, 55, .08) 40%, transparent 70%); }
+.seam--light .seam__line--r { background: linear-gradient(90deg, #B38728, rgba(179, 135, 40, .5) 60%, rgba(179, 135, 40, 0)); }
+.seam--light .seam__line--l { background: linear-gradient(270deg, #B38728, rgba(179, 135, 40, .5) 60%, rgba(179, 135, 40, 0)); }
+.seam--light .seam__bloom { background: radial-gradient(ellipse at center, rgba(179, 135, 40, .22), rgba(179, 135, 40, .06) 40%, transparent 70%); }
+.seam--static .seam__line { transform: none; }
+.seam--static .seam__mark { transform: rotate(45deg); }
+.seam--static .seam__bloom { opacity: .35; transform: none; }
