@@ -1,9 +1,17 @@
 'use client';
 
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
 import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
 import { RevealText } from '@/components/motion/RevealText';
+import {
+  frameLockRect,
+  nativeVideoRect,
+  settleTransform,
+  smoothstep01,
+  type HRect,
+  type NativeMode,
+} from '@/lib/frame-sequence/handoff';
 
 // ── Tunable constants ────────────────────────────────────────────────────────
 const FOREX_FRAMES       = 240;
@@ -12,7 +20,14 @@ const OPPORTUNITY_FRAMES = 240;
 const TOTAL_FRAMES       = FOREX_FRAMES + STOCK_FRAMES + OPPORTUNITY_FRAMES; // 720
 
 const SCROLL_HEIGHT_VH     = 1500; // 500vh per phase + transition buffer
-const FRAME_SCROLL_PORTION = 0.70; // 0.00 .. 0.70 = 720 frames; 0.74 .. 0.88 = blend into video
+const FRAME_SCROLL_PORTION = 0.70; // 0.00 .. 0.70 = 720 frames; then dissolve, settle and reveal (below)
+
+// Hand-off to the video (see lib/frame-sequence/handoff.ts)
+const XFADE_START = 0.73; // HUD gone (0.68..0.73), frame 720 settled since 0.70
+const XFADE_END   = 0.81;
+const SETTLE_END  = 0.89;
+const REVEAL_ON   = 0.89;
+const REVEAL_OFF  = 0.85;
 
 // ── Frame URL helpers ────────────────────────────────────────────────────────
 const pad = (n: number): string => String(n + 1).padStart(3, '0');
@@ -61,12 +76,18 @@ export function ForexMarketScroll(): React.ReactElement {
   const videoStateRef   = useRef<'play' | 'pause'>('pause');
   const armedRef        = useRef<boolean>(false);
 
+  const [revealed, setRevealed] = useState(false);
+  const revealedRef = useRef(false);
+  const reducedRef  = useRef(false);
+  const progressRef = useRef(0);
+  const shadeElRef  = useRef<HTMLElement | null>(null);
+  const geomRef     = useRef<{ native: HRect; lock: HRect } | null>(null);
+
   // HUD and overlay refs
   const hudLabelRef    = useRef<HTMLSpanElement>(null);
   const hudFrameRef    = useRef<HTMLSpanElement>(null);
   const hudTotalRef    = useRef<HTMLSpanElement>(null);
   const hudProgressRef = useRef<HTMLDivElement>(null);
-  const doorwayShadeRef = useRef<HTMLDivElement>(null);
 
   const forexOverlayRef       = useRef<HTMLDivElement>(null);
   const stockOverlayRef       = useRef<HTMLDivElement>(null);
@@ -86,6 +107,47 @@ export function ForexMarketScroll(): React.ReactElement {
     return videoRef.current;
   };
 
+  const getShade = (): HTMLElement | null =>
+    (shadeElRef.current ??= heroContentRef.current?.querySelector<HTMLElement>('[data-ih-shade]') ?? null);
+
+  const applySettle = (progress: number): void => {
+    const video = getVideo();
+    const g = geomRef.current;
+    if (!video || !g) return;
+    const s = reducedRef.current ? 1 : smoothstep01(XFADE_END, SETTLE_END, progress);
+    const tr = settleTransform(g.native, g.lock, s);
+    put('vtr', `translate3d(${tr.tx.toFixed(2)}px,${tr.ty.toFixed(2)}px,0) scale(${tr.k.toFixed(5)})`,
+      (v) => { video.style.transform = v; });
+    put('shade', (reducedRef.current ? (progress >= XFADE_END ? 1 : 0) : s).toFixed(3),
+      (v) => { const el = getShade(); if (el) el.style.opacity = v; });
+  };
+
+  // Measure native + frame-locked video geometry on mount and resize (layout is never written per frame).
+  useEffect(() => {
+    const host = heroContentRef.current;
+    if (!host) return;
+    reducedRef.current = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const measure = (): void => {
+      const video = getVideo();
+      const c = { w: host.clientWidth, h: host.clientHeight };
+      if (!video || !c.w || !c.h) return;
+      const portrait = window.matchMedia('(max-aspect-ratio: 11/10)').matches;
+      const mode: NativeMode = !portrait ? 'desktop'
+        : window.matchMedia('(min-width: 600px)').matches ? 'tablet' : 'portrait';
+      const native = nativeVideoRect(c, mode);
+      geomRef.current = { native, lock: frameLockRect(c) };
+      video.style.left = `${native.x}px`; video.style.top = `${native.y}px`;
+      video.style.width = `${native.w}px`; video.style.height = `${native.h}px`;
+      delete last.current.vtr;
+      applySettle(progressRef.current);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(host);
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const setVideoState = (want: 'play' | 'pause'): void => {
     const video = getVideo();
     if (!video || videoStateRef.current === want) return;
@@ -98,6 +160,7 @@ export function ForexMarketScroll(): React.ReactElement {
   };
 
   const onUpdate = ({ progress, frame }: FrameSequenceUpdate): void => {
+    progressRef.current = progress;
     const globalIdx = frame;
     const { seq, localIdx } = resolveSeq(globalIdx);
 
@@ -144,40 +207,39 @@ export function ForexMarketScroll(): React.ReactElement {
     put('oppOp', (oppOp * hudMasterOp).toFixed(3), (v) => { if (opportunityOverlayRef.current) opportunityOverlayRef.current.style.opacity = v; });
     put('hudOp', hudMasterOp.toFixed(3), (v) => { if (hudContainerRef.current) hudContainerRef.current.style.opacity = v; });
 
-    // ── Doorway-to-video blend ─────────────────────────────────────────────
+    // ── Doorway-to-video dissolve (opacity only), settle (transform), reveal ──
     const canvas = canvasRef.current;
-    const shade = doorwayShadeRef.current;
     const heroContent = heroContentRef.current;
     if (canvas && heroContent) {
-      if (progress <= 0.73) {
-        // 0.00 .. 0.73: normal playback, then settle on the sharp doorway frame
-        put('opacity', '1', (v) => { canvas.style.opacity = v; });
-        put('scale', 'none', (v) => { canvas.style.transform = v; });
-        put('shade', '0', (v) => { if (shade) shade.style.opacity = v; });
-        put('pe', 'none', (v) => { heroContent.style.pointerEvents = v; });
-      } else {
-        // 0.73 .. 0.88: doorway frame vanishes into the dark video with zero light bloom
-        const t = Math.max(0, Math.min(1, (progress - 0.73) / 0.15));
-        // Transform/opacity only: scale + fade the canvas and a black shade stand in for blur/brightness.
-        put('opacity', Math.max(0, 1 - t).toFixed(3), (v) => { canvas.style.opacity = v; });
-        put('scale', `scale(${(1 + t * 0.06).toFixed(4)})`, (v) => { canvas.style.transform = v; });
-        put('shade', (Math.min(1, t * 0.9) * (1 - t)).toFixed(3), (v) => { if (shade) shade.style.opacity = v; });
-        put('pe', t >= 0.90 ? 'auto' : 'none', (v) => { heroContent.style.pointerEvents = v; });
-      }
-      // The canvas is opaque before 0.73, so the hero layer can stay hidden until then.
+      const e = smoothstep01(XFADE_START, XFADE_END, progress);
+      put('opacity', (1 - e).toFixed(3), (v) => { canvas.style.opacity = v; });
       put('vis', progress >= 0.70 ? 'visible' : 'hidden', (v) => { heroContent.style.visibility = v; });
     }
+    applySettle(progress);
+    const want = revealedRef.current ? progress >= REVEAL_OFF : progress >= REVEAL_ON;
+    if (want !== revealedRef.current) {
+      revealedRef.current = want;
+      setRevealed(want); // threshold crossings only
+      if (heroContent) heroContent.style.pointerEvents = want ? 'auto' : 'none';
+    }
 
-    // ── Background video: arm late, play only near the doorway ────────────
+    // ── Background video: arm late, hold frame 0 until the dissolve completes ──
     const video = getVideo();
     if (video) {
       if (progress >= 0.45 && !armedRef.current) {
         armedRef.current = true;
         video.preload = 'auto';
         video.load();
+        // iOS ignores preload: a muted inline play+pause decodes frame 0.
+        video.play().then(() => {
+          if (videoStateRef.current !== 'play') { video.pause(); video.currentTime = 0; }
+        }).catch(() => {});
       }
-      if (progress >= 0.62) setVideoState('play');
-      else if (progress < 0.55) setVideoState('pause');
+      if (progress >= XFADE_END && !reducedRef.current) setVideoState('play');
+      else if (progress < XFADE_END) {
+        setVideoState('pause');
+        if (progress < XFADE_START - 0.01 && video.currentTime !== 0) video.currentTime = 0; // canvas opaque: invisible reset
+      }
     }
   };
 
@@ -223,7 +285,7 @@ export function ForexMarketScroll(): React.ReactElement {
           className="absolute inset-0 z-0"
           style={{ pointerEvents: 'none', visibility: 'hidden' }}
         >
-          <IntelligenceHero autoPlayVideo={false} videoPreload="none" />
+          <IntelligenceHero embedded revealed={revealed} autoPlayVideo={false} videoPreload="none" />
         </div>
 
         {/* Layer 1: Single canvas – drawing surface for the 720 cinematic frames */}
@@ -233,15 +295,9 @@ export function ForexMarketScroll(): React.ReactElement {
           style={{
             display: 'block',
             imageRendering: 'auto',
-            willChange: 'transform, opacity',
+            willChange: 'opacity',
           }}
         />
-        <div
-          ref={doorwayShadeRef}
-          className="absolute inset-0 z-[11] pointer-events-none bg-black"
-          style={{ opacity: 0 }}
-        />
-
 
 
         {/* Layer 3: HUD and Editorial Overlays */}

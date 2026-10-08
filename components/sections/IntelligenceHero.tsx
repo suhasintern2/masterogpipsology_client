@@ -9,14 +9,21 @@ const EASING = [0.22, 1, 0.36, 1] as const;
 export function IntelligenceHero({
   autoPlayVideo = true,
   videoPreload = 'auto',
+  embedded = false,
+  revealed = false,
 }: {
   autoPlayVideo?: boolean;
   videoPreload?: 'auto' | 'metadata' | 'none';
+  /** Rendered inside ForexMarketScroll's sticky (geometry and video are driven from there). */
+  embedded?: boolean;
+  /** Embedded only: show the text. */
+  revealed?: boolean;
 } = {}): React.ReactElement {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const inView = useInView(containerRef, { once: false, amount: 0.15 });
+  const show = embedded ? revealed : inView;
 
   // Play video on mount / view
   useEffect(() => {
@@ -56,7 +63,7 @@ export function IntelligenceHero({
     <section
       ref={containerRef}
       aria-label="The Next Layer of Intelligence"
-      className={`${styles.stage} ${isOpen ? styles.isOpen : ''}`}
+      className={`${styles.stage} ${embedded ? styles.embedded : ''} ${isOpen ? styles.isOpen : ''}`}
     >
       {/* ── Background Video Plate ────────────────────────────────────────── */}
       <div className={styles.plate} aria-hidden="true">
@@ -75,6 +82,7 @@ export function IntelligenceHero({
             type="video/mp4"
           />
         </video>
+        {embedded && <div className={styles.plateShade} data-ih-shade="" aria-hidden="true" />}
       </div>
 
       {/* ── Topbar / Header ────────────────────────────────────────────────── */}
@@ -85,7 +93,7 @@ export function IntelligenceHero({
           aria-label="Home"
           className={styles.brand}
           initial={{ opacity: 0, y: 20 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 20 } : {}}
           transition={{ duration: 0.8, ease: EASING }}
         >
           <svg
@@ -129,7 +137,7 @@ export function IntelligenceHero({
           className={styles.links}
           aria-label="Primary"
           initial={{ opacity: 0, y: 14 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 14 } : {}}
           transition={{ duration: 0.8, ease: EASING }}
         >
           <a href="#about">About</a>
@@ -143,7 +151,7 @@ export function IntelligenceHero({
           href="#get-started"
           className={`${styles.pill} ${styles.pillNav}`}
           initial={{ opacity: 0, y: 14 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 14 } : {}}
           transition={{ duration: 0.8, ease: EASING }}
         >
           <span>Get Started</span>
@@ -200,7 +208,7 @@ export function IntelligenceHero({
         <motion.h1
           className={styles.headline}
           initial={{ opacity: 0, y: 14 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 14 } : {}}
           transition={{ duration: 0.9, delay: 0.06, ease: EASING }}
         >
           <span>The Next Layer</span>
@@ -210,7 +218,7 @@ export function IntelligenceHero({
         <motion.p
           className={styles.sub}
           initial={{ opacity: 0, y: 14 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 14 } : {}}
           transition={{ duration: 0.9, delay: 0.14, ease: EASING }}
         >
           <span>A unified infrastructure platform to help teams build,</span>
@@ -220,7 +228,7 @@ export function IntelligenceHero({
         <motion.div
           className={styles.actions}
           initial={{ opacity: 0, y: 14 }}
-          animate={inView ? { opacity: 1, y: 0 } : {}}
+          animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 14 } : {}}
           transition={{ duration: 0.9, delay: 0.22, ease: EASING }}
         >
           <a href="#get-started" className={`${styles.pill} ${styles.pillCta}`}>
@@ -237,7 +245,7 @@ export function IntelligenceHero({
         className={styles.logos}
         aria-label="Partner logos"
         initial={{ opacity: 0 }}
-        animate={inView ? { opacity: 1 } : {}}
+        animate={show ? { opacity: 1 } : embedded ? { opacity: 0 } : {}}
         transition={{ duration: 1.1, delay: 0.34, ease: 'easeOut' }}
       >
         {/* Logo 1 */}
