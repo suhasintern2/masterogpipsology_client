@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import { gsap } from '@/lib/gsap';
 import { loadProgress } from '@/lib/load-progress';
 import { scrollStore } from '@/lib/scroll-store';
@@ -10,9 +10,9 @@ import { StageCanvas } from '@/components/three/StageCanvas';
 import { GoldEnvironment } from '@/components/three/GoldEnvironment';
 import { GoldDust } from '@/components/three/GoldDust';
 import { useDocumentVisible, useInViewActive } from '@/components/three/useInViewActive';
-import { BackgroundPlane } from './BackgroundPlane';
-import { GlassPanel, usePanelRect } from './GlassPanel';
-import { CAMERA_FOV } from './constants';
+import { HERO_PANEL_U, heroZoom, screenXOfImageU } from '@/lib/hero-zoom';
+import { GlassPanel } from './GlassPanel';
+import { CAMERA_FOV, CAMERA_Z, useViewWorld } from './constants';
 
 const DUST_AREA: [number, number, number] = [14, 8, 4];
 
@@ -28,12 +28,12 @@ function ReadyProbe({ onReady }: { onReady: () => void }): null {
 }
 
 function CameraRig(): null {
-  const panel = usePanelRect();
+  const size = useThree((s) => s.size);
+  const { w: worldW } = useViewWorld();
   useFrame(({ camera }) => {
-    const p = scrollStore.heroProgress;
-    camera.position.z = 10 - 1.4 * p;
-    camera.position.y = -0.3 * p;
-    camera.lookAt(panel.cx * 0.3 * p, 0, 0);
+    const fx = screenXOfImageU(HERO_PANEL_U, size.width, size.height);
+    const z = heroZoom(scrollStore.heroProgress, fx);
+    camera.position.set(z.panFrac * worldW, 0, CAMERA_Z / z.scale);
   });
   return null;
 }
@@ -43,7 +43,6 @@ function Scene({ onReady }: { onReady: () => void }): React.ReactElement {
     <>
       <ambientLight intensity={0.35} />
       <GoldEnvironment />
-      <BackgroundPlane />
       <GlassPanel />
       <GoldDust count={500} area={DUST_AREA} />
       <CameraRig />
@@ -52,12 +51,7 @@ function Scene({ onReady }: { onReady: () => void }): React.ReactElement {
   );
 }
 
-interface HeroStageProps {
-  /** Called when the 3D layer is visible, so the DOM light layers can hide. */
-  onReady?: () => void;
-}
-
-export default function HeroStage({ onReady }: HeroStageProps): React.ReactElement {
+export default function HeroStage(): React.ReactElement {
   const wrap = useRef<HTMLDivElement>(null);
   const inView = useInViewActive(wrap);
   const visible = useDocumentVisible();
@@ -65,8 +59,7 @@ export default function HeroStage({ onReady }: HeroStageProps): React.ReactEleme
   const handleReady = useCallback((): void => {
     if (wrap.current) gsap.to(wrap.current, { opacity: 1, duration: 0.8 });
     loadProgress.complete('hero-3d');
-    onReady?.();
-  }, [onReady]);
+  }, []);
 
   return (
     <div
@@ -75,7 +68,7 @@ export default function HeroStage({ onReady }: HeroStageProps): React.ReactEleme
       style={{ opacity: 0 }}
       aria-hidden="true"
     >
-      <StageCanvas camera={{ fov: CAMERA_FOV, position: [0, 0, 10] }} className="absolute inset-0">
+      <StageCanvas alpha camera={{ fov: CAMERA_FOV, position: [0, 0, 10] }} className="absolute inset-0">
         <ClockBridge active={inView && visible} />
         <Scene onReady={handleReady} />
       </StageCanvas>

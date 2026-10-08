@@ -6,6 +6,7 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import { scrollStore } from '@/lib/scroll-store';
 import { damp } from '@/lib/frame-sequence/math';
+import { smoothstep } from '@/lib/three/ease';
 import { imageUvToWorld } from '@/lib/three/cover-math';
 import { Candles } from './Candles';
 import { FOCUS, IMG_ASPECT, PANEL_RECT, useViewWorld } from './constants';
@@ -34,11 +35,14 @@ export function usePanelRect(): { cx: number; cy: number; w: number; h: number }
   }, [vw, vh]);
 }
 
-/** Transmission-glass chart panel with a gold frame, positioned over the cleaned plate. */
+/** Frosted glass chart pane with a gold frame. Invisible at rest (registered on the baked panel), lifts off on scroll. */
 export function GlassPanel(): React.ReactElement {
   const { cx, cy, w, h } = usePanelRect();
   const group = useRef<THREE.Group>(null);
   const prog = useRef(0);
+  const alpha = useRef(0);
+  const glassMat = useRef<THREE.MeshPhysicalMaterial>(null);
+  const frameMat = useRef<THREE.MeshStandardMaterial>(null);
 
   const frameGeo = useMemo(() => {
     const shape = roundedRectShape(w, h, 0.04);
@@ -61,32 +65,39 @@ export function GlassPanel(): React.ReactElement {
     prog.current = damp(prog.current, scrollStore.heroProgress, 8, dt);
     const p = prog.current;
     const t = state.clock.elapsedTime;
-    g.position.set(cx, cy + 0.35 * p + Math.sin(t * 0.6) * 0.03 * (1 - p), 0.04 + 2.1 * p);
-    g.rotation.x = -0.16 * p + scrollStore.mouseY * 0.05;
-    g.rotation.y = 0.3 * p + scrollStore.mouseX * 0.07;
+    const a = smoothstep(0.01, 0.16, p);
+    alpha.current = a;
+    g.visible = a > 0.002;
+    if (glassMat.current) glassMat.current.opacity = 0.14 * a;
+    if (frameMat.current) frameMat.current.opacity = a;
+    g.position.set(cx, cy + 0.35 * p + Math.sin(t * 0.6) * 0.03 * a * (1 - p), 0.04 + 2.1 * p);
+    g.rotation.x = -0.16 * p + scrollStore.mouseY * 0.05 * a;
+    g.rotation.y = 0.3 * p + scrollStore.mouseX * 0.07 * a;
   });
 
   return (
-    <group ref={group} position={[cx, cy, 0.04]}>
+    <group ref={group} position={[cx, cy, 0.04]} visible={false}>
       <RoundedBox args={[w, h, 0.06]} radius={0.04} smoothness={4}>
         <meshPhysicalMaterial
-          transmission={1}
-          thickness={0.35}
-          roughness={0.16}
-          ior={1.45}
+          ref={glassMat}
+          color="#ffffff"
+          emissive="#fff4e0"
+          emissiveIntensity={1}
+          roughness={0.15}
+          metalness={0}
           clearcoat={1}
-          clearcoatRoughness={0.08}
-          attenuationColor="#f3e6cf"
-          attenuationDistance={2.5}
-          color="#fffaf0"
-          envMapIntensity={1.2}
-          specularIntensity={1}
+          clearcoatRoughness={0.06}
+          envMapIntensity={1.4}
+          transparent
+          opacity={0}
+          depthWrite={false}
+          toneMapped={false}
         />
       </RoundedBox>
       <mesh geometry={frameGeo} position={[0, 0, 0.015]}>
-        <meshStandardMaterial color="#d4af37" metalness={1} roughness={0.22} />
+        <meshStandardMaterial ref={frameMat} color="#d4af37" metalness={1} roughness={0.22} transparent opacity={0} />
       </mesh>
-      <Candles w={w - 0.05} h={h - 0.05} />
+      <Candles w={w - 0.05} h={h - 0.05} alpha={alpha} />
     </group>
   );
 }

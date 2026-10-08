@@ -2,29 +2,20 @@
 import React from 'react';
 
 // ─── Hero Section ─────────────────────────────────────────────────────────────
-// Full-viewport hero. Background image from components/assets.
-// The background stays consistent — scroll drives GRADIENT LIGHT PLAY,
-// not page darkening. As the user scrolls:
-//   • A warm atmospheric orb drifts upward-left (morning sun effect)
-//   • A secondary cool rim light sweeps rightward
-//   • A golden light shaft rotates subtly
-//   • A soft warm-to-cool colour temperature shift happens in the gradient
-//   • The bottom fade adjusts but stays within the beige palette
-// None of this changes the actual page background — only the decorative
-// gradient layers that live inside the hero animate.
+// Full-viewport hero. The photo is a plain DOM image (never tinted or covered);
+// scroll drives a zoom of the photo (shared math in lib/hero-zoom.ts), and on the
+// high tier a transparent WebGL layer registered to the same projection.
 
 import { useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { motion, useInView } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
-import { HeroLightLayers } from '@/components/sections/hero/HeroLightLayers';
+import { HeroLiveTicker } from '@/components/sections/hero/HeroLiveTicker';
+import { useHeroScroll } from '@/components/sections/hero/useHeroScroll';
 import { RevealText } from '@/components/motion/RevealText';
-import { LightLeak } from '@/components/fx/LightLeak';
 import { GoldShimmer } from '@/components/motion/GoldShimmer';
 import dynamic from 'next/dynamic';
-import { gsap } from '@/lib/gsap';
 import { useDeviceTier } from '@/lib/device-tier';
-import { HeroSweep } from '@/components/sections/hero/HeroSweep';
 import { loadProgress } from '@/lib/load-progress';
 import {
   HERO_SUBLINE,
@@ -66,27 +57,30 @@ export function Hero(): React.ReactElement {
   }, [markHeroImage]);
   const inView = useInView(ref, { once: true, amount: 0.08 });
   const tier = useDeviceTier();
-  const lightsRef = useRef<HTMLDivElement>(null);
+  const zoomRef = useRef<HTMLDivElement>(null);
 
   // Register before the dynamic 3D import resolves so the preloader waits for it.
   useEffect(() => {
     if (tier === 'high') loadProgress.register('hero-3d', 0.25);
   }, [tier]);
-  const hideLights = useCallback((): void => {
-    if (lightsRef.current) gsap.to(lightsRef.current, { opacity: 0, duration: 0.8 });
-  }, []);
 
   const contentRef = useRef<HTMLDivElement>(null);
+  useHeroScroll(ref, zoomRef, contentRef, tier !== 'static');
 
   return (
     <section
       id="hero"
       ref={ref}
-      className="relative min-h-screen w-full flex items-center overflow-hidden"
+      className="hero-ink relative min-h-screen w-full flex items-center overflow-hidden"
       aria-label="Hero"
     >
-      {/* ── Background image ────────────────────────────────────────────────── */}
-      <div className="absolute inset-0" aria-hidden="true">
+      {/* ── Background image (never covered or tinted) ──────────────────────── */}
+      <div
+        ref={zoomRef}
+        className="absolute inset-0"
+        style={{ transformOrigin: '50% 50%', willChange: 'transform' }}
+        aria-hidden="true"
+      >
         <Image
           src="/hero/hero-3200.jpg"
           ref={bgImgRef}
@@ -96,16 +90,11 @@ export function Hero(): React.ReactElement {
           preload
           fetchPriority="high"
           sizes="100vw"
+          quality={90}
           style={{ objectFit: 'cover', objectPosition: '65% center' }}
         />
-
-        <div ref={lightsRef} className="absolute inset-0">
-          <HeroLightLayers contentRef={contentRef} />
-        </div>
-        {tier === 'low' && <HeroSweep />}
       </div>
-      {tier === 'high' && <HeroStage onReady={hideLights} />}
-      <LightLeak from="right" intensity={0.7} className="fx-leak--bottom" />
+      {tier === 'high' && <HeroStage />}
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
       <div
@@ -126,14 +115,14 @@ export function Hero(): React.ReactElement {
             <span
               className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-body font-medium"
               style={{
-                borderColor: 'var(--accent)',
-                color: 'var(--accent)',
-                backgroundColor: 'color-mix(in srgb, var(--accent) 12%, transparent)',
+                borderColor: 'rgba(140,109,35,0.55)',
+                color: '#6B5320',
+                backgroundColor: 'rgba(250,246,237,0.55)',
               }}
             >
               <span
                 className="pulse-dot w-1.5 h-1.5 rounded-full flex-shrink-0"
-                style={{ backgroundColor: 'var(--accent)' }}
+                style={{ backgroundColor: '#8C6D23' }}
                 aria-hidden="true"
               />
               Education before execution
@@ -148,8 +137,8 @@ export function Hero(): React.ReactElement {
             className="display"
             style={{
               fontSize: 'var(--fs-hero)',
-              color: '#F3ECE0',
-              textShadow: '0 2px 28px rgba(0,0,0,0.35)',
+              color: '#14161B',
+              textShadow: '0 1px 24px rgba(255,248,236,0.55)',
             }}
           >
             Education before <GoldShimmer>execution</GoldShimmer>
@@ -172,8 +161,8 @@ export function Hero(): React.ReactElement {
             animate={inView ? 'visible' : 'hidden'}
             className="text-base sm:text-lg leading-relaxed font-body max-w-prose"
             style={{
-              color: 'rgba(243,236,224,0.80)',
-              textShadow: '0 1px 12px rgba(0,0,0,0.3)',
+              color: 'rgba(20,22,27,0.78)',
+              textShadow: '0 1px 14px rgba(255,248,236,0.6)',
             }}
           >
             {HERO_SUBLINE}
@@ -187,12 +176,22 @@ export function Hero(): React.ReactElement {
             animate={inView ? 'visible' : 'hidden'}
             className="flex flex-wrap items-center gap-3 pt-1"
           >
-            <Button as="a" href="#cta" size="lg" variant="liquid" id="hero-cta-primary">
+            <Button as="a" href="#cta" size="lg" variant="liquid" className="btn-liquid--on-light" id="hero-cta-primary">
               {CTA_PRIMARY}
             </Button>
-            <Button as="a" href="#curriculum" size="lg" variant="outline" id="hero-cta-secondary">
+            <Button as="a" href="#curriculum" size="lg" variant="ghost" className="border border-[rgba(20,22,27,0.35)]" id="hero-cta-secondary">
               {CTA_SECONDARY}
             </Button>
+          </motion.div>
+
+          <motion.div
+            custom={6}
+            variants={fadeUpVariants}
+            initial="hidden"
+            animate={inView ? 'visible' : 'hidden'}
+            className="pt-2"
+          >
+            <HeroLiveTicker tier={tier} />
           </motion.div>
         </div>
       </div>

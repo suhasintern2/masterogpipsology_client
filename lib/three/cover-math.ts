@@ -1,6 +1,6 @@
 // Maps image UV (top-left origin) to world coordinates on a plane that fills the
 // view and shows the image with object-fit: cover + object-position (focus).
-// Mirrors the cover mapping in the hero BackgroundPlane fragment shader.
+// Mirrors the cover mapping in the former hero background-plane shader.
 
 export interface Vec2Like { x: number; y: number }
 
