@@ -2,9 +2,35 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, useInView } from 'framer-motion';
+import { gsap } from '@/lib/gsap';
 import styles from './IntelligenceHero.module.css';
 
 const EASING = [0.22, 1, 0.36, 1] as const;
+
+// Letter indices (into each line's text) that bleed. Varied per line.
+const LINE_ONE = 'Be a man.';
+const LINE_TWO = 'Take that goddamn risk.';
+const DRIPS_ONE = [1, 3, 5, 7] as const;
+const DRIPS_TWO = [1, 3, 6, 10, 13, 16, 20] as const;
+
+function BloodLine({ text, drips }: { text: string; drips: readonly number[] }): React.ReactElement {
+  return (
+    <>
+      <span className={styles.blood} data-text="">{text}</span>
+      <span className={styles.drips} data-layer="" aria-hidden="true">
+        {drips.map((i) => (
+          <span key={i} className={styles.drip} data-drip="" data-i={i}>
+            <svg data-strand="" className={styles.strand} viewBox="0 0 10 100" preserveAspectRatio="none">
+              <path d="M2.6 0 H7.4 C7.2 30 6.4 60 5.8 86 C5.6 97 4.4 97 4.2 86 C3.6 60 2.8 30 2.6 0Z" fill="#8c0212" />
+              <path d="M3.9 0 H5 C5 40 4.9 70 4.8 88 H4.4 C4.3 70 3.9 40 3.9 0Z" fill="#ff7b86" opacity="0.35" />
+            </svg>
+            <span data-drop="" className={styles.drop} />
+          </span>
+        ))}
+      </span>
+    </>
+  );
+}
 
 export function IntelligenceHero({
   autoPlayVideo = true,
@@ -24,6 +50,111 @@ export function IntelligenceHero({
   const videoRef = useRef<HTMLVideoElement>(null);
   const inView = useInView(containerRef, { once: false, amount: 0.15 });
   const show = embedded ? revealed : inView;
+  const statementRef = useRef<HTMLDivElement>(null);
+
+  // Blood drips: measured on mount/resize only, animated with GSAP (transform/opacity only).
+  useEffect(() => {
+    const root = statementRef.current;
+    if (!embedded || !root) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const range = document.createRange();
+    const tls: gsap.core.Timeline[] = [];
+    let onScreen = true;
+    let delayed: gsap.core.Tween | null = null;
+
+    const dripsOf = (): HTMLElement[] => Array.from(root.querySelectorAll<HTMLElement>('[data-drip]'));
+
+    const measure = (): void => {
+      root.querySelectorAll<HTMLElement>('[data-layer]').forEach((layer) => {
+        const line = layer.parentElement;
+        const tn = line?.querySelector('[data-text]')?.firstChild;
+        if (!line || !tn) return;
+        const base = line.getBoundingClientRect();
+        const fs = parseFloat(getComputedStyle(line).fontSize) || 64;
+        layer.querySelectorAll<HTMLElement>('[data-drip]').forEach((el) => {
+          const idx = Number(el.dataset.i);
+          range.setStart(tn, idx);
+          range.setEnd(tn, idx + 1);
+          const r = range.getBoundingClientRect();
+          const w = Math.max(3, fs * 0.075);
+          const h = Number(el.dataset.h) || fs * (0.45 + Math.random() * 0.5);
+          el.dataset.h = String(h);
+          el.style.left = `${r.left - base.left + r.width / 2 - w / 2}px`;
+          el.style.top = `${r.top - base.top + fs * 0.9}px`;
+          el.style.width = `${w}px`;
+          const strand = el.querySelector<HTMLElement>('[data-strand]');
+          const drop = el.querySelector<HTMLElement>('[data-drop]');
+          if (strand) strand.style.height = `${h}px`;
+          if (drop) {
+            drop.style.width = `${w * 1.5}px`;
+            drop.style.height = `${w * 1.9}px`;
+            drop.style.left = `${-w * 0.25}px`;
+          }
+        });
+      });
+    };
+
+    const kill = (): void => {
+      delayed?.kill();
+      tls.splice(0).forEach((t) => t.kill());
+    };
+
+    const pose = (): void => {
+      dripsOf().forEach((el) => {
+        const h = Number(el.dataset.h) || 0;
+        const k = reduced ? 0.55 : 0.2;
+        gsap.set(el.querySelector('[data-strand]'), { scaleY: k, transformOrigin: '50% 0%' });
+        gsap.set(el.querySelector('[data-drop]'), { y: h * k, opacity: reduced ? 1 : 0, scale: reduced ? 1 : 0.7 });
+      });
+    };
+
+    const build = (): void => {
+      kill();
+      measure();
+      pose();
+      if (reduced || !show) return;
+      delayed = gsap.delayedCall(1.2, () => {
+        dripsOf().forEach((el, n) => {
+          const h = Number(el.dataset.h) || 40;
+          const strand = el.querySelector('[data-strand]');
+          const drop = el.querySelector('[data-drop]');
+          const grow = 3.2 + Math.random() * 2.6;
+          const tl = gsap.timeline({
+            repeat: -1,
+            repeatDelay: 0.4 + Math.random() * 2.4,
+            delay: (n % 4) * 0.6 + Math.random() * 1.6,
+          });
+          tl.set(strand, { scaleY: 0.2 })
+            .set(drop, { y: h * 0.2, opacity: 1, scale: 0.7 })
+            .to(strand, { scaleY: 1, duration: grow, ease: 'sine.in' }, 0)
+            .to(drop, { y: h, scale: 1, duration: grow, ease: 'sine.in' }, 0)
+            .to(drop, { y: h * 2.9, opacity: 0, duration: 1.3, ease: 'power2.in' })
+            .to(strand, { scaleY: 0.2, duration: 0.7, ease: 'power2.out' }, '<');
+          if (!onScreen || document.hidden) tl.pause();
+          tls.push(tl);
+        });
+      });
+    };
+
+    const sync = (): void => {
+      const run = onScreen && !document.hidden;
+      tls.forEach((t) => (run ? t.resume() : t.pause()));
+    };
+    const io = new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; sync(); });
+    io.observe(root);
+    document.addEventListener('visibilitychange', sync);
+    const ro = new ResizeObserver(build);
+    ro.observe(root);
+    document.fonts?.ready.then(build).catch(() => {});
+    build();
+
+    return () => {
+      kill();
+      io.disconnect();
+      ro.disconnect();
+      document.removeEventListener('visibilitychange', sync);
+    };
+  }, [embedded, show]);
 
   // Play video on mount / view
   useEffect(() => {
@@ -210,14 +341,14 @@ export function IntelligenceHero({
       )}
 
       {embedded ? (
-        <div className={styles.statement}>
+        <div ref={statementRef} className={styles.statement}>
           <motion.p
             className={styles.stmtLine}
             initial={{ opacity: 0, y: 18 }}
             animate={show ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
             transition={{ duration: 0.9, delay: 0.06, ease: EASING }}
           >
-            Be a man.
+            <BloodLine text={LINE_ONE} drips={DRIPS_ONE} />
           </motion.p>
           <motion.p
             className={`${styles.stmtLine} ${styles.stmtGold}`}
@@ -225,7 +356,7 @@ export function IntelligenceHero({
             animate={show ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
             transition={{ duration: 0.9, delay: 0.2, ease: EASING }}
           >
-            Take that goddamn risk.
+            <BloodLine text={LINE_TWO} drips={DRIPS_TWO} />
           </motion.p>
         </div>
       ) : (

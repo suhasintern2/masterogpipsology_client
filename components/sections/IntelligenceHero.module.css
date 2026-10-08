@@ -799,6 +799,26 @@
   line-height: 1.02;
   letter-spacing: -0.015em;
   color: #fafafa;
-  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.45);
+  position: relative;
 }
-.stmtGold { font-style: italic; color: #D9B866; }
+.stmtGold { font-style: italic; }
+
+/* Blood crimson lettering with a wet highlight along the top of the glyphs */
+.blood {
+  color: #8A0303;
+  background:
+    linear-gradient(180deg, rgba(255, 150, 160, 0.5) 0%, rgba(255, 150, 160, 0) 24%),
+    linear-gradient(180deg, #B3001B 0%, #8A0303 65%, #650202 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 14px rgba(0, 0, 0, 0.55));
+}
+.drips { position: absolute; inset: 0; pointer-events: none; overflow: visible; }
+.drip { position: absolute; display: block; }
+.strand { display: block; width: 100%; transform-origin: 50% 0%; will-change: transform; }
+.drop {
+  position: absolute; top: 0; display: block; opacity: 0; will-change: transform, opacity;
+  border-radius: 50% 50% 50% 50% / 62% 62% 38% 38%;
+  background: radial-gradient(circle at 35% 30%, #ff8a94 0%, #b3001b 35%, #7a0210 100%);
+}
