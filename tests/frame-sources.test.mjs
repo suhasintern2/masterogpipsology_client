@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { frameUrl, buildFrameSet, chooseFrameTier, warmIndices } from '../lib/frame-sequence/sources.ts';
+import { frameUrl, buildFrameSet, chooseFrameTier, warmIndices, uniqueLocalFrames, UNIQUE_LOCAL, UNIQUE_PER_SEQ, SEQ_SCROLL_VH } from '../lib/frame-sequence/sources.ts';
 
 test('frameUrl', () => {
   assert.equal(frameUrl('crypto', 0, 'full'), '/assets/crypto/ezgif-frame-001.jpg');
@@ -39,4 +39,26 @@ test('warmIndices', () => {
   for (const i of [23, 24, 32, 232]) assert.ok(w.includes(i));
   assert.ok(!w.includes(25));
   for (let i = 1; i < w.length; i++) assert.ok(w[i] > w[i - 1]);
+});
+
+test('uniqueLocalFrames drops pulldown duplicates', () => {
+  assert.equal(uniqueLocalFrames(240).length, 192);
+  assert.equal(UNIQUE_PER_SEQ, 192);
+  assert.equal(SEQ_SCROLL_VH, 350);
+  assert.deepEqual(UNIQUE_LOCAL.slice(0, 7), [0, 1, 3, 4, 5, 6, 8]);
+  assert.ok(UNIQUE_LOCAL.includes(239));
+  for (const x of [2, 7, 237]) assert.ok(!UNIQUE_LOCAL.includes(x));
+  for (let k = 1; k < UNIQUE_LOCAL.length; k++) assert.ok(UNIQUE_LOCAL[k] > UNIQUE_LOCAL[k - 1]);
+});
+
+test('buildFrameSet with unique locals', () => {
+  const s = buildFrameSet(['forex', 'stock_market', 'opportunity'], 'portrait', 240, UNIQUE_LOCAL);
+  assert.equal(s.urls.length, 576);
+  assert.equal(s.urls[2], '/frames/v1/forex/p1080/004.webp');
+  assert.equal(s.urls[192], '/frames/v1/stock_market/p1080/001.webp');
+  assert.equal(s.urls[575], '/frames/v1/opportunity/p1080/240.webp');
+  assert.equal(s.fallback[575], '/assets/opportunity/ezgif-frame-240.jpg');
+  const c = buildFrameSet(['crypto'], 'full', 240, UNIQUE_LOCAL);
+  assert.equal(c.urls.length, 192);
+  assert.equal(c.fallback, null);
 });

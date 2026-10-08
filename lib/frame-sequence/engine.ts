@@ -19,6 +19,7 @@ import {
   pickNextDecode,
   pickNextFetch,
   retryDelayMs,
+  splitBudget,
   type Size,
 } from './math';
 
@@ -40,6 +41,10 @@ export interface FrameSequenceEngineOptions {
   nearWindow?: number; // default 24
   /** Called after a frame bitmap is successfully decoded. */
   onFrameReady?: (index: number) => void;
+  /** Frames further than this from the current frame are fetched last (default Infinity). */
+  fetchHorizon?: number;
+  /** Fired once after the full fetch finishes with nothing idle or in flight. */
+  onAllFetched?: () => void;
 }
 
 const FETCH_IDLE = 0;
@@ -76,6 +81,10 @@ export class FrameSequenceEngine {
   private readonly maxFetches: number;
   private readonly maxDecodes: number;
   private readonly nearWindow: number;
+  private readonly fetchHorizon: number;
+  private readonly onAllFetched?: () => void;
+  private active = false;
+  private allFetchedFired = false;
   private readonly onFrameReady?: (index: number) => void;
   private readonly coarse: boolean;
   private readonly mem: number | undefined;
@@ -132,6 +141,8 @@ export class FrameSequenceEngine {
     const hc = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 4 : 4;
     this.maxDecodes = opts.maxConcurrentDecodes ?? Math.min(4, Math.max(2, Math.floor(hc / 2)));
     this.nearWindow = opts.nearWindow ?? 24;
+    this.fetchHorizon = opts.fetchHorizon ?? Infinity;
+    this.onAllFetched = opts.onAllFetched;
     this.onFrameReady = opts.onFrameReady;
     this.fallbackUrls = opts.fallbackUrls && opts.fallbackUrls.length === opts.urls.length ? opts.fallbackUrls : null;
     this.warm = (opts.warm ?? []).filter((p) => p >= 0 && p < opts.urls.length);
@@ -193,6 +204,14 @@ export class FrameSequenceEngine {
     this.markDirty();
     // Budgets are shared: re-split across every enabled engine.
     enabledEngines.forEach((e) => e.markDirty());
+  }
+
+  /** Active = its section is mid-scroll. Exactly one active engine gets the full decode budget. */
+  setActive(on: boolean): void {
+    if (this.destroyed || on === this.active) return;
+    this.active = on;
+    enabledEngines.forEach((e) => e.markDirty());
+    this.markDirty();
   }
 
   markDirty(): void {
@@ -307,7 +326,9 @@ export class FrameSequenceEngine {
   }
 
   private effectiveBudget(): number {
-    return Math.max(16, Math.floor(this.budget / Math.max(1, enabledEngines.size)));
+    let activeEnabled = 0;
+    enabledEngines.forEach((e) => { if (e.active) activeEnabled++; });
+    return splitBudget(this.budget, enabledEngines.size, activeEnabled, this.active, this.pinned.length);
   }
 
   private draw(bmp: ImageBitmap): void {
@@ -390,9 +411,15 @@ export class FrameSequenceEngine {
           this.warm,
           this.retryAt,
           now,
+          this.fetchHorizon,
         );
         if (i < 0) break;
         this.startFetch(i);
+      }
+      if (this.fullFetch && !this.allFetchedFired && this.inflightFetches === 0 && !this.fetchState.includes(FETCH_IDLE)) {
+        this.allFetchedFired = true;
+        const cb = this.onAllFetched;
+        if (cb) queueMicrotask(cb);
       }
     }
     if (this.paused) return;
@@ -495,6 +522,7 @@ export class FrameSequenceEngine {
   private switchToFallback(): void {
     if (!this.fallbackUrls) return;
     this.usingFallback = true;
+    this.allFetchedFired = false;
     this.epoch++;
     this.urls = this.fallbackUrls;
     this.fetchState.fill(0);

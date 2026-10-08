@@ -79,7 +79,9 @@ export const FETCH_STRIDES: readonly number[] = [16, 8, 4, 2, 1];
  * Lower = sooner. Frames within nearWindow of current: score = dist. Otherwise
  * (strideLevel+1)*1_000_000 + dist. dist = |i-current|, doubled when behind the scroll direction.
  */
-export function fetchScore(i: number, current: number, dir: number, nearWindow: number): number {
+export const FETCH_HORIZON_PENALTY = 10_000_000;
+
+export function fetchScore(i: number, current: number, dir: number, nearWindow: number, horizon: number = Infinity): number {
   const delta = i - current;
   const raw = Math.abs(delta);
   const dist = delta * (dir >= 0 ? 1 : -1) < 0 ? raw * 2 : raw;
@@ -88,7 +90,7 @@ export function fetchScore(i: number, current: number, dir: number, nearWindow: 
   for (let k = 0; k < FETCH_STRIDES.length; k++) {
     if (i % FETCH_STRIDES[k] === 0) { level = k; break; }
   }
-  return (level + 1) * 1_000_000 + dist;
+  return (dist > horizon ? FETCH_HORIZON_PENALTY : 0) + (level + 1) * 1_000_000 + dist;
 }
 
 /**
@@ -105,6 +107,7 @@ export function pickNextFetch(
   warm: readonly number[] = [],
   notBefore?: ArrayLike<number>,
   now: number = 0,
+  horizon: number = Infinity,
 ): number {
   for (let k = 0; k < pinned.length; k++) {
     const p = pinned[k];
@@ -120,7 +123,7 @@ export function pickNextFetch(
   for (let i = 0; i < state.length; i++) {
     if (state[i] !== 0) continue;
     if (notBefore && notBefore[i] > now) continue;
-    const s = fetchScore(i, current, dir, nearWindow);
+    const s = fetchScore(i, current, dir, nearWindow, horizon);
     if (s < bestScore) { bestScore = s; best = i; }
   }
   return best;
@@ -209,4 +212,12 @@ export function decodeStride(speed: number, ahead: number, horizonSec: number = 
 /** Fetch retry backoff: 500, 1000, 2000, 4000, then 8000 ms max. attempt >= 1. */
 export function retryDelayMs(attempt: number): number {
   return Math.min(8000, 500 * 2 ** Math.max(0, attempt - 1));
+}
+
+export const STANDBY_BITMAPS = 12;
+/** Decode budget for one engine. Exactly one active enabled engine gets the rest; others keep a standby window. */
+export function splitBudget(budget: number, enabled: number, activeEnabled: number, isActive: boolean, pinned: number, standby: number = STANDBY_BITMAPS): number {
+  if (enabled <= 1) return budget;
+  if (activeEnabled === 1) return isActive ? Math.max(16, budget - (enabled - 1) * standby) : standby + pinned;
+  return Math.max(16, Math.floor(budget / enabled));
 }

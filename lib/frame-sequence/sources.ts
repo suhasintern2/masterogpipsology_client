@@ -7,6 +7,19 @@ export type SeqName = 'crypto' | 'forex' | 'stock_market' | 'opportunity';
 /** Bump and write a NEW folder when frames change (cache busting: /frames is immutable). */
 export const FRAME_SET_VERSION = 'v1';
 export const FRAMES_PER_SEQ = 240;
+/** Every source sequence was exported 24->30 fps: 0-based local frame i with i % 5 === 2 repeats i - 1
+ *  (verified by docs/plans/forex-smoothness/cadence.mjs). Those frames are never fetched or shown. */
+export const PULLDOWN_PERIOD = 5;
+export const PULLDOWN_PHASE = 2;
+export function uniqueLocalFrames(perSeq: number = FRAMES_PER_SEQ): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < perSeq; i++) if (i % PULLDOWN_PERIOD !== PULLDOWN_PHASE) out.push(i);
+  return out;
+}
+export const UNIQUE_LOCAL: readonly number[] = uniqueLocalFrames(); // 192 entries, [0,1,3,4,5,6,8,...,239]
+export const UNIQUE_PER_SEQ = UNIQUE_LOCAL.length; // 192
+/** Scroll distance (vh) that plays one source sequence. Crypto: 450vh section - 100vh sticky. */
+export const SEQ_SCROLL_VH = 350;
 export const PORTRAIT_MAX_ASPECT = 0.8; // 864/1080
 export const LITE_MAX_BACKING_W = 1408;
 export const TIER_SIZE: Record<FrameTier, { w: number; h: number }> = {
@@ -32,11 +45,17 @@ export interface FrameSet {
   expected: { w: number; h: number };
 }
 
-export function buildFrameSet(seqs: readonly SeqName[], tier: FrameTier, perSeq: number = FRAMES_PER_SEQ): FrameSet {
+export function buildFrameSet(
+  seqs: readonly SeqName[],
+  tier: FrameTier,
+  perSeq: number = FRAMES_PER_SEQ,
+  locals: readonly number[] | null = null,
+): FrameSet {
   const urls: string[] = [];
   const jpegs: string[] = [];
   for (const seq of seqs) {
-    for (let i = 0; i < perSeq; i++) {
+    const idx = locals ?? Array.from({ length: perSeq }, (_, i) => i);
+    for (const i of idx) {
       urls.push(frameUrl(seq, i, tier));
       jpegs.push(jpegFrameUrl(seq, i));
     }

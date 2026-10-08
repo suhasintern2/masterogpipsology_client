@@ -32,6 +32,12 @@ export interface UseFrameSequenceOptions {
   decodeMargin?: string;
   /** Fired after a frame (global index) is decoded. */
   onFrameReady?: (index: number) => void;
+  /** Frames within this distance of the current frame are fetched strictly nearest-first. Engine default 24. */
+  nearWindow?: number;
+  /** Frames further than this from the current frame are fetched last (e.g. one source folder). */
+  fetchHorizon?: number;
+  /** Fired once when every frame has been fetched. */
+  onAllFetched?: () => void;
 }
 
 export interface FrameSequenceRefs {
@@ -101,6 +107,9 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
       expectedSize: set.expected,
       background: optsRef.current.background,
       onFrameReady: (i) => optsRef.current.onFrameReady?.(i),
+      nearWindow: optsRef.current.nearWindow,
+      fetchHorizon: optsRef.current.fetchHorizon,
+      onAllFetched: () => optsRef.current.onAllFetched?.(),
     });
     engine.attachCanvas(canvas);
 
@@ -135,6 +144,7 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
     const tick = (_ts: number, deltaMs: number): void => {
       const opts = optsRef.current;
       const target = targetProgress();
+      engine.setActive(target > 0 && target < 1);
       const rate = reducedRef.current || lenisRef.current ? 0 : (opts.smoothing ?? 12);
       const p = damp(progressRef.current, target, rate, Math.min(deltaMs / 1000, 0.05));
       progressRef.current = p;
