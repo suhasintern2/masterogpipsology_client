@@ -342,7 +342,25 @@ body {
 
 /* ─── Footer / nav link hover — CSS-only, no JS handlers ─────────────────────── */
 .footer-link {
+  position: relative;
+  display: inline-block;
   transition: color 0.2s ease, opacity 0.2s ease;
+}
+.footer-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 1px;
+  background: #D4AF37;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.footer-link:hover::after,
+.footer-link:focus-visible::after {
+  transform: scaleX(1);
 }
 .footer-link:hover {
   color: var(--text) !important;
@@ -665,3 +683,56 @@ html.js .rt-pending {
 .fx-cursor-dot { width: 6px; height: 6px; background: #D4AF37; }
 html.has-cursor, html.has-cursor a, html.has-cursor button { cursor: none; }
 html.has-cursor input, html.has-cursor textarea, html.has-cursor [contenteditable] { cursor: auto; }
+
+
+/* ─── Phase 6 sections ───────────────────────────────────────────────────────── */
+/* Faculty: hover-focus (hover-capable pointers only) */
+.fc-img { transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+.fc { transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+@media (hover: hover) {
+  .faculty-grid:has(.fc:hover) .fc:not(:hover) { opacity: 0.35; }
+  .fc:hover .fc-img { transform: scale(1.04); }
+}
+
+/* Moments: film-strip frame with sprocket dots (static) */
+.moment-frame {
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  background: #0c0c10;
+}
+.moment-frame::before,
+.moment-frame::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 14px;
+  z-index: 3;
+  pointer-events: none;
+  background-image: repeating-radial-gradient(circle at 9px 50%, rgba(212, 175, 55, 0.55) 0 2px, transparent 2.5px 18px);
+  background-size: 18px 100%;
+  background-repeat: repeat-x;
+}
+.moment-frame::before { top: 6px; }
+.moment-frame::after { bottom: 6px; }
+
+/* Curriculum timeline nodes */
+.tl-dot {
+  position: relative;
+  width: 9px;
+  height: 9px;
+  border-radius: 9999px;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  background: #08080A;
+}
+.tl-gold {
+  position: absolute;
+  inset: -1px;
+  border-radius: 9999px;
+  background: #D4AF37;
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.tl-num { color: rgba(168, 161, 150, 0.55); transition: color 0.4s ease; }
+.tl-node[data-on='true'] .tl-gold { opacity: 1; }
+.tl-node[data-on='true'] .tl-num { color: #D4AF37; }

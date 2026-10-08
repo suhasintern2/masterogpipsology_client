@@ -10,6 +10,8 @@ import { Hero } from '@/components/sections/Hero';
 import { CryptoMarketScroll } from '@/components/sections/CryptoMarketScroll';
 import { ForexMarketScroll } from '@/components/sections/ForexMarketScroll';
 import { SculptureInterlude } from '@/components/sections/SculptureInterlude';
+import { Markets } from '@/components/sections/Markets';
+import { MomentsReel } from '@/components/sections/MomentsReel';
 import { LuxuryTeamGallery } from '@/components/sections/LuxuryTeamGallery';
 import { Gallery } from '@/components/sections/Gallery';
 import { Curriculum } from '@/components/sections/Curriculum';
@@ -59,14 +61,20 @@ export default function Page(): React.ReactElement {
 
           {/* ── PERSISTENT LUXURY BLACK EFFECT (Stays black all the way to page end) ── */}
           <div data-nav-tone="dark" className="theme-black-section relative w-full text-[#F5EFEB]">
-            {/* Luxury animated team movement gallery & moments */}
+            {/* Three markets, 3D glass cards */}
+            <Markets />
+
+            {/* Faculty editorial gallery */}
             <LuxuryTeamGallery />
+
+            {/* Atelier film strip: pinned horizontal moments reel */}
+            <MomentsReel />
+
+            {/* Programme curriculum (12-week timeline) */}
+            <Curriculum />
 
             {/* Verified cohort records & certification awards */}
             <Gallery />
-
-            {/* Programme curriculum */}
-            <Curriculum />
 
             <Testimonial />
             <MagicRingShowcase />
