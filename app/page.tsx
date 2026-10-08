@@ -22,7 +22,6 @@ import { Footer } from '@/components/sections/Footer';
 import { Preloader } from '@/components/fx/Preloader';
 import { PaletteBackdrop } from '@/components/fx/PaletteBackdrop';
 import { Grain } from '@/components/fx/Grain';
-import { Cursor } from '@/components/fx/Cursor';
 
 export default function Page(): React.ReactElement {
   return (
@@ -30,7 +29,6 @@ export default function Page(): React.ReactElement {
       <Preloader />
       <PaletteBackdrop />
       <Grain />
-      <Cursor />
       <LongTaskProbe />
       {/* Fixed navigation */}
       <GlassHeader />

@@ -691,21 +691,6 @@ html.js .rt-pending {
 .hl-c[data-up="1"] b { background: #6F9A6A; }
 .hl-c[data-up="0"] b { background: #C47766; }
 
-.fx-cursor-ring, .fx-cursor-dot {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 95;
-  pointer-events: none;
-  border-radius: 50%;
-  will-change: transform;
-}
-.fx-cursor-ring { width: 36px; height: 36px; border: 1px solid #D4AF37; }
-.fx-cursor-dot { width: 6px; height: 6px; background: #D4AF37; }
-html.has-cursor, html.has-cursor a, html.has-cursor button { cursor: none; }
-html.has-cursor input, html.has-cursor textarea, html.has-cursor [contenteditable] { cursor: auto; }
-
-
 /* ─── Phase 6 sections ───────────────────────────────────────────────────────── */
 /* Faculty: hover-focus (hover-capable pointers only) */
 .fc-img { transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
