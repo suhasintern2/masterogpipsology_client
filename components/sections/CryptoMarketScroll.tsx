@@ -28,8 +28,9 @@ if (typeof window !== 'undefined') {
   loadProgress.register('crypto-first-frame', 0.15);
   warmFirstFrame('crypto');
 }
+// Fractional: the engine blends the two neighbouring frames. p = 1 is exactly the last frame.
 const frameForProgress = (p: number, total: number): number =>
-  Math.min(total - 1, Math.max(0, Math.round(p * (total - 1))));
+  Math.min(total - 1, Math.max(0, p * (total - 1)));
 
 export function CryptoMarketScroll(): React.ReactElement {
   // HUD refs – written directly, never via React state

@@ -73,6 +73,37 @@ export function nearestAvailable(flags: ArrayLike<number>, idx: number): number 
   return -1;
 }
 
+/** Blend alpha is quantised to this many steps: the canvas is redrawn only when a step (or a frame index) changes. */
+export const BLEND_LEVELS = 64;
+
+export function smoothstep(t: number): number {
+  const x = clamp01(t);
+  return x * x * (3 - 2 * x);
+}
+
+/** What to paint for a fractional frame position. b < 0: draw `a` alone. Else draw `a`, then `b` over it at alpha q / BLEND_LEVELS. */
+export interface BlendPlan { a: number; b: number; q: number }
+
+/**
+ * Draw-time frame blending. `pos` is a fractional frame position (clamped to 0..total-1).
+ * Frame floor(pos) is drawn opaque, floor(pos)+1 over it at smoothstep(frac), alpha quantised to 1/BLEND_LEVELS.
+ * Alpha that rounds to 0 or 1 collapses to a single frame, and the last frame (pos >= total-1) is always drawn alone.
+ * cuts[i] truthy = frame i -> i+1 is a hard cut (different shot): never blended, the nearest frame is shown instead.
+ */
+export function planBlend(pos: number, total: number, cuts?: ArrayLike<number> | null): BlendPlan {
+  if (!(total > 0)) return { a: 0, b: -1, q: 0 };
+  const last = total - 1;
+  const p = clamp(Number.isNaN(pos) ? 0 : pos, 0, last);
+  const base = Math.floor(p);
+  if (base >= last) return { a: last, b: -1, q: 0 };
+  const frac = p - base;
+  if (cuts && cuts[base]) return { a: Math.round(p), b: -1, q: 0 };
+  const q = Math.round(smoothstep(frac) * BLEND_LEVELS);
+  if (q <= 0) return { a: base, b: -1, q: 0 };
+  if (q >= BLEND_LEVELS) return { a: base + 1, b: -1, q: 0 };
+  return { a: base, b: base + 1, q };
+}
+
 export const FETCH_STRIDES: readonly number[] = [16, 8, 4, 2, 1];
 
 /**

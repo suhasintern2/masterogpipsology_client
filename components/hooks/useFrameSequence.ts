@@ -16,7 +16,7 @@ export interface FrameSequenceUpdate {
 export interface UseFrameSequenceOptions {
   /** Builds the global URL list for a tier. Pass a module-level function. */
   urlsFor: (tier: FrameTier) => FrameSet;
-  /** Integer 0..total-1 */
+  /** Fractional frame position 0..total-1 (must reach exactly total-1 at the end). The engine blends floor(pos) and floor(pos)+1. */
   frameForProgress: (progress: number, total: number) => number;
   /** Global indices fetched first and never evicted. */
   pinned?: readonly number[];
@@ -38,6 +38,8 @@ export interface UseFrameSequenceOptions {
   fetchHorizon?: number;
   /** Fired once when every frame has been fetched. */
   onAllFetched?: () => void;
+  /** Indices i where frame i -> i+1 is a hard cut (e.g. joins of source folders). Never blended across. */
+  cuts?: readonly number[];
 }
 
 export interface FrameSequenceRefs {
@@ -110,6 +112,7 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
       nearWindow: optsRef.current.nearWindow,
       fetchHorizon: optsRef.current.fetchHorizon,
       onAllFetched: () => optsRef.current.onAllFetched?.(),
+      cuts: optsRef.current.cuts,
     });
     engine.attachCanvas(canvas);
 
@@ -148,8 +151,10 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
       const rate = reducedRef.current || lenisRef.current ? 0 : (opts.smoothing ?? 12);
       const p = damp(progressRef.current, target, rate, Math.min(deltaMs / 1000, 0.05));
       progressRef.current = p;
-      const frame = opts.frameForProgress(p, engine.total);
-      const shown = engine.update(frame);
+      const pos = opts.frameForProgress(p, engine.total);
+      const frame = Math.min(engine.total - 1, Math.max(0, Math.round(pos)));
+      // Reduced motion: whole frames, no cross-blend.
+      const shown = engine.update(reducedRef.current ? frame : pos);
       opts.onUpdate?.({ progress: p, frame, shownFrame: shown });
     };
 

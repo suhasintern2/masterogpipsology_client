@@ -76,10 +76,13 @@ const PINNED = [0, TOTAL_FRAMES - 1] as const;
 const FOREX_WARM = warmIndices(PER);
 // Tilt reaches exactly 0 before the doorway dissolve starts, so the last frame matches the video lock.
 const TILT_EASE = [at(-140), at(0)] as const;
+// Fractional: the engine blends the two neighbouring frames. Past the frame range it is exactly the last frame.
 const frameForProgress = (p: number, total: number): number =>
   p < FRAME_SCROLL_PORTION
-    ? Math.min(total - 1, Math.max(0, Math.round((p / FRAME_SCROLL_PORTION) * (total - 1))))
+    ? Math.min(total - 1, Math.max(0, (p / FRAME_SCROLL_PORTION) * (total - 1)))
     : total - 1;
+// Folder joins (forex -> stock_market -> opportunity) are separate shots: never cross-blend them.
+const FOLDER_CUTS = [PER - 1, 2 * PER - 1] as const;
 
 // ── Component ────────────────────────────────────────────────────────────────
 export function ForexMarketScroll(): React.ReactElement {
@@ -269,6 +272,7 @@ export function ForexMarketScroll(): React.ReactElement {
     frameForProgress,
     warm: FOREX_WARM,
     fetchHorizon: PER,
+    cuts: FOLDER_CUTS,
     onAllFetched: () => { framesFetchedRef.current = true; },
     background: '#050505',
     prefetchMargin: '400% 0px 400% 0px',
