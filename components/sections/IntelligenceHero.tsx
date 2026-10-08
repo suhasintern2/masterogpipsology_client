@@ -34,6 +34,7 @@ export function IntelligenceHero({
 
   // Close menu on Escape or screen resize to landscape
   useEffect(() => {
+    if (embedded) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setIsOpen(false);
     };
@@ -57,7 +58,7 @@ export function IntelligenceHero({
         mql.removeListener(handleMql);
       }
     };
-  }, []);
+  }, [embedded]);
 
   return (
     <section
@@ -85,123 +86,127 @@ export function IntelligenceHero({
         {embedded && <div className={styles.plateShade} data-ih-shade="" aria-hidden="true" />}
       </div>
 
+      {!embedded && (
+        <>
       {/* ── Topbar / Header ────────────────────────────────────────────────── */}
-      <header className={styles.topbar}>
-        {/* Brand bolt geometry mark */}
-        <motion.a
-          href="#home"
-          aria-label="Home"
-          className={styles.brand}
-          initial={{ opacity: 0, y: 20 }}
-          animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 20 } : {}}
-          transition={{ duration: 0.8, ease: EASING }}
-        >
-          <svg
-            className={styles.brandSvg}
-            viewBox="0 0 31.5 48.5"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
+        <header className={styles.topbar}>
+          {/* Brand bolt geometry mark */}
+          <motion.a
+            href="#home"
+            aria-label="Home"
+            className={styles.brand}
+            initial={{ opacity: 0, y: 20 }}
+            animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 20 } : {}}
+            transition={{ duration: 0.8, ease: EASING }}
           >
-            <defs>
-              <linearGradient
-                id="brandGradBg1"
-                x1="8"
-                y1="0"
-                x2="34.1"
-                y2="28.9"
-                gradientUnits="userSpaceOnUse"
+            <svg
+              className={styles.brandSvg}
+              viewBox="0 0 31.5 48.5"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <defs>
+                <linearGradient
+                  id="brandGradBg1"
+                  x1="8"
+                  y1="0"
+                  x2="34.1"
+                  y2="28.9"
+                  gradientUnits="userSpaceOnUse"
+                >
+                  <stop offset="0" stopColor="#9e9e9e" />
+                  <stop offset="0.28" stopColor="#a6a6a6" />
+                  <stop offset="0.34" stopColor="#a3a3a3" />
+                  <stop offset="0.40" stopColor="#3a3a3a" />
+                  <stop offset="0.55" stopColor="#414141" />
+                  <stop offset="0.60" stopColor="#7a7a7a" />
+                  <stop offset="0.68" stopColor="#8e8e8e" />
+                  <stop offset="0.80" stopColor="#a9a9a9" />
+                  <stop offset="0.95" stopColor="#c4c4c4" />
+                  <stop offset="1" stopColor="#cccccc" />
+                </linearGradient>
+              </defs>
+              <path
+                d="M21.5 0 L21.5 19.5 L31.5 19.5 L31.5 29 L10 48.5 L10 28.5 L0.5 28.5 L0.5 18.5 Z"
+                fill="url(#brandGradBg1)"
+              />
+              <rect x="0.5" y="18.5" width="9" height="10" fill="#fdfdfd" />
+              <rect x="22" y="19.5" width="9.5" height="9.5" fill="#fdfdfd" />
+            </svg>
+          </motion.a>
+  
+          {/* Primary nav links (Desktop centered) */}
+          <motion.nav
+            className={styles.links}
+            aria-label="Primary"
+            initial={{ opacity: 0, y: 14 }}
+            animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 14 } : {}}
+            transition={{ duration: 0.8, ease: EASING }}
+          >
+            <a href="#about">About</a>
+            <a href="#features">Features</a>
+            <a href="#faq">FAQ</a>
+            <a href="#contact">Contact</a>
+          </motion.nav>
+  
+          {/* Header CTA pill */}
+          <motion.a
+            href="#get-started"
+            className={`${styles.pill} ${styles.pillNav}`}
+            initial={{ opacity: 0, y: 14 }}
+            animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 14 } : {}}
+            transition={{ duration: 0.8, ease: EASING }}
+          >
+            <span>Get Started</span>
+          </motion.a>
+  
+          {/* Mobile Burger Toggle */}
+          <button
+            className={styles.burger}
+            onClick={() => setIsOpen((prev) => !prev)}
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isOpen}
+            aria-controls="mobile-intelligence-menu"
+          >
+            <i />
+            <i />
+          </button>
+        </header>
+  
+        {/* ── Mobile Overlay Menu ────────────────────────────────────────────── */}
+        <nav
+          id="mobile-intelligence-menu"
+          className={styles.menu}
+          aria-hidden={!isOpen}
+        >
+          <div className={styles.menuInner}>
+            <p className={styles.menuEyebrow}>Menu</p>
+            <ul className={styles.menuList}>
+              <li><a href="#about" onClick={() => setIsOpen(false)}>About</a></li>
+              <li><a href="#features" onClick={() => setIsOpen(false)}>Features</a></li>
+              <li><a href="#faq" onClick={() => setIsOpen(false)}>FAQ</a></li>
+              <li><a href="#contact" onClick={() => setIsOpen(false)}>Contact</a></li>
+            </ul>
+            <div className={styles.menuFoot}>
+              <a
+                href="#get-started"
+                className={styles.pillMenu}
+                onClick={() => setIsOpen(false)}
               >
-                <stop offset="0" stopColor="#9e9e9e" />
-                <stop offset="0.28" stopColor="#a6a6a6" />
-                <stop offset="0.34" stopColor="#a3a3a3" />
-                <stop offset="0.40" stopColor="#3a3a3a" />
-                <stop offset="0.55" stopColor="#414141" />
-                <stop offset="0.60" stopColor="#7a7a7a" />
-                <stop offset="0.68" stopColor="#8e8e8e" />
-                <stop offset="0.80" stopColor="#a9a9a9" />
-                <stop offset="0.95" stopColor="#c4c4c4" />
-                <stop offset="1" stopColor="#cccccc" />
-              </linearGradient>
-            </defs>
-            <path
-              d="M21.5 0 L21.5 19.5 L31.5 19.5 L31.5 29 L10 48.5 L10 28.5 L0.5 28.5 L0.5 18.5 Z"
-              fill="url(#brandGradBg1)"
-            />
-            <rect x="0.5" y="18.5" width="9" height="10" fill="#fdfdfd" />
-            <rect x="22" y="19.5" width="9.5" height="9.5" fill="#fdfdfd" />
-          </svg>
-        </motion.a>
-
-        {/* Primary nav links (Desktop centered) */}
-        <motion.nav
-          className={styles.links}
-          aria-label="Primary"
-          initial={{ opacity: 0, y: 14 }}
-          animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 14 } : {}}
-          transition={{ duration: 0.8, ease: EASING }}
-        >
-          <a href="#about">About</a>
-          <a href="#features">Features</a>
-          <a href="#faq">FAQ</a>
-          <a href="#contact">Contact</a>
-        </motion.nav>
-
-        {/* Header CTA pill */}
-        <motion.a
-          href="#get-started"
-          className={`${styles.pill} ${styles.pillNav}`}
-          initial={{ opacity: 0, y: 14 }}
-          animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 14 } : {}}
-          transition={{ duration: 0.8, ease: EASING }}
-        >
-          <span>Get Started</span>
-        </motion.a>
-
-        {/* Mobile Burger Toggle */}
-        <button
-          className={styles.burger}
-          onClick={() => setIsOpen((prev) => !prev)}
-          aria-label={isOpen ? 'Close menu' : 'Open menu'}
-          aria-expanded={isOpen}
-          aria-controls="mobile-intelligence-menu"
-        >
-          <i />
-          <i />
-        </button>
-      </header>
-
-      {/* ── Mobile Overlay Menu ────────────────────────────────────────────── */}
-      <nav
-        id="mobile-intelligence-menu"
-        className={styles.menu}
-        aria-hidden={!isOpen}
-      >
-        <div className={styles.menuInner}>
-          <p className={styles.menuEyebrow}>Menu</p>
-          <ul className={styles.menuList}>
-            <li><a href="#about" onClick={() => setIsOpen(false)}>About</a></li>
-            <li><a href="#features" onClick={() => setIsOpen(false)}>Features</a></li>
-            <li><a href="#faq" onClick={() => setIsOpen(false)}>FAQ</a></li>
-            <li><a href="#contact" onClick={() => setIsOpen(false)}>Contact</a></li>
-          </ul>
-          <div className={styles.menuFoot}>
-            <a
-              href="#get-started"
-              className={styles.pillMenu}
-              onClick={() => setIsOpen(false)}
-            >
-              <span>Get Started</span>
-            </a>
-            <a
-              href="#architecture"
-              className={styles.ghostMenu}
-              onClick={() => setIsOpen(false)}
-            >
-              View Architecture
-            </a>
+                <span>Get Started</span>
+              </a>
+              <a
+                href="#architecture"
+                className={styles.ghostMenu}
+                onClick={() => setIsOpen(false)}
+              >
+                View Architecture
+              </a>
+            </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+        </>
+      )}
 
       {/* ── Hero Main Content ──────────────────────────────────────────────── */}
       <main className={styles.hero}>
@@ -211,7 +216,7 @@ export function IntelligenceHero({
           animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 14 } : {}}
           transition={{ duration: 0.9, delay: 0.06, ease: EASING }}
         >
-          <span>The Next Layer</span>
+          <span>The Next Layer</span>{' '}
           <span>of Intelligence</span>
         </motion.h1>
 
@@ -221,7 +226,7 @@ export function IntelligenceHero({
           animate={show ? { opacity: 1, y: 0 } : embedded ? { opacity: 0, y: 14 } : {}}
           transition={{ duration: 0.9, delay: 0.14, ease: EASING }}
         >
-          <span>A unified infrastructure platform to help teams build,</span>
+          <span>A unified infrastructure platform to help teams build,</span>{' '}
           <span>ship, and scale AI systems with confidence.</span>
         </motion.p>
 
