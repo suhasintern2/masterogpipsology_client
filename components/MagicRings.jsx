@@ -96,6 +96,8 @@ export default function MagicRings({
   parallax = 0.05,
   clickBurst = false,
   alphaMode = 'luminance',
+  maxDpr = 2,
+  onUnavailable,
 }) {
   const mountRef = useRef(null);
   const propsRef = useRef(null);
@@ -104,12 +106,14 @@ export default function MagicRings({
   const hoverAmountRef = useRef(0);
   const isHoveredRef = useRef(false);
   const burstRef = useRef(0);
+  const unavailableRef = useRef(null);
+  unavailableRef.current = onUnavailable;
 
   propsRef.current = {
     color, colorTwo, speed, ringCount, attenuation, lineThickness,
     baseRadius, radiusStep, scaleRate, opacity, noiseAmount,
     rotation, ringGap, fadeIn, fadeOut, followMouse, mouseInfluence,
-    hoverScale, parallax, clickBurst, alphaMode,
+    hoverScale, parallax, clickBurst, alphaMode, maxDpr,
   };
 
   useEffect(() => {
@@ -120,11 +124,13 @@ export default function MagicRings({
     try {
       renderer = new THREE.WebGLRenderer({ alpha: true });
     } catch {
+      unavailableRef.current?.();
       return;
     }
 
     if (!renderer.capabilities.isWebGL2) {
       renderer.dispose();
+      unavailableRef.current?.();
       return;
     }
 
@@ -166,12 +172,12 @@ export default function MagicRings({
     scene.add(quad);
 
     const resize = () => {
-      const w = mount.clientWidth;
-      const h = mount.clientHeight;
-      const dpr = Math.min(window.devicePixelRatio, 2);
-      renderer.setSize(w, h);
+      const w = mount.clientWidth || 1;
+      const h = mount.clientHeight || 1;
+      const dpr = Math.min(window.devicePixelRatio || 1, propsRef.current.maxDpr);
       renderer.setPixelRatio(dpr);
-      uniforms.uResolution.value.set(w * dpr, h * dpr);
+      renderer.setSize(w, h, false);
+      uniforms.uResolution.value.set(Math.round(w * dpr), Math.round(h * dpr));
     };
     resize();
     window.addEventListener('resize', resize);
@@ -268,10 +274,17 @@ export default function MagicRings({
     };
     document.addEventListener('visibilitychange', onVisibility);
 
+    const onContextLost = () => {
+      tryStop();
+      unavailableRef.current?.();
+    };
+    renderer.domElement.addEventListener('webglcontextlost', onContextLost);
+
     tryStart();
 
     return () => {
       tryStop();
+      renderer.domElement.removeEventListener('webglcontextlost', onContextLost);
       io.disconnect();
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('resize', resize);

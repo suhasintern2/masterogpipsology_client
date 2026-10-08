@@ -2,8 +2,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
 import { gsap, useGSAP } from '@/lib/gsap';
+import { useDeviceTier } from '@/lib/device-tier';
+import { RingsErrorBoundary } from './RingsErrorBoundary';
+import { StaticRings } from './StaticRings';
 
 // three is only fetched once the showcase is near the viewport (keeps it out of first-load JS).
 const MagicRings = dynamic(() => import('@/components/MagicRings'), { ssr: false });
@@ -27,8 +29,10 @@ export function MagicRingShowcase(): React.ReactElement {
   const containerRef = useRef<HTMLElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const auraRef = useRef<HTMLDivElement>(null);
-  const medallionRef = useRef<HTMLDivElement>(null);
   const [nearViewport, setNearViewport] = useState(false);
+  const tier = useDeviceTier();
+  const [ringsFailed, setRingsFailed] = useState(false);
+  const staticRings = tier === 'static' || ringsFailed;
 
   useEffect(() => {
     const el = containerRef.current;
@@ -51,8 +55,8 @@ export function MagicRingShowcase(): React.ReactElement {
   useGSAP(
     () => {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      const card = cardRef.current, aura = auraRef.current, med = medallionRef.current;
-      if (!card || !aura || !med) return;
+      const card = cardRef.current, aura = auraRef.current;
+      if (!card || !aura) return;
       const tl = gsap.timeline({
         scrollTrigger: { trigger: containerRef.current, start: 'top bottom', end: 'bottom top', scrub: true },
       });
@@ -62,7 +66,6 @@ export function MagicRingShowcase(): React.ReactElement {
       keyframes(tl, card, 'y', [[0, 50], [0.5, 0], [1, -35]]);
       keyframes(tl, aura, 'scale', [[0, 0.75], [0.5, 1.3], [1, 0.85]]);
       keyframes(tl, aura, 'opacity', [[0, 0.15], [0.5, 0.65], [1, 0.2]]);
-      keyframes(tl, med, 'y', [[0, 25], [0.5, 0], [1, -20]]);
     },
     { scope: containerRef },
   );
@@ -111,22 +114,14 @@ export function MagicRingShowcase(): React.ReactElement {
 
         {/* ─── WEBGL MAGIC RINGS BACKGROUND ─── */}
         <div className="absolute inset-0 z-0">
-          {nearViewport && <MagicRings
-            color="#D4AF37"
-            colorTwo="#FAF1DE"
-            ringCount={7}
-            speed={0.8}
-            lineThickness={2.3}
-            baseRadius={0.3}
-            radiusStep={0.088}
-            scaleRate={0.08}
-            attenuation={10.5}
-            ringGap={1.42}
-            followMouse={true}
-            mouseInfluence={0.25}
-            hoverScale={1.14}
-            clickBurst={true}
-          />}
+          {staticRings ? <StaticRings /> : nearViewport && (
+            <RingsErrorBoundary fallback={<StaticRings />}>
+              <MagicRings color="#D4AF37" colorTwo="#FAF1DE" ringCount={7} speed={0.8} lineThickness={2.3}
+                baseRadius={0.3} radiusStep={0.088} scaleRate={0.08} attenuation={10.5} ringGap={1.42}
+                followMouse={false} parallax={0} hoverScale={1.14} clickBurst={true}
+                maxDpr={tier === 'low' ? 1.5 : 2} onUnavailable={() => setRingsFailed(true)} />
+            </RingsErrorBoundary>
+          )}
         </div>
 
         {/* ─── EXPANDING GOLDEN AURA (Scroll Reactive) ─── */}
@@ -149,58 +144,36 @@ export function MagicRingShowcase(): React.ReactElement {
           />
         </div>
 
-        {/* ─── FLOATING CENTER LOGO MEDALLION ─── */}
-        <div
-          ref={medallionRef}
-          style={{
-            transformStyle: 'preserve-3d',
-          }}
-          className="relative z-20 flex flex-col items-center justify-center pointer-events-none select-none px-4"
-        >
-          {/* Continuous Micro-Levitation */}
-          <motion.div
-            animate={{
-              y: [-6, 6, -6],
-              rotateZ: [-0.5, 0.5, -0.5],
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-            className="flex flex-col items-center"
-          >
-            {/* Medallion Disc */}
-            <div className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 rounded-full p-2 bg-black/85 border-2 border-[#D4AF37]/80 shadow-[0_0_60px_rgba(212,175,55,0.5),inset_0_0_30px_rgba(212,175,55,0.35)] flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
-              {/* Inner Decorative Accent Ring */}
-              <div className="absolute inset-1.5 rounded-full border border-[#D4AF37]/30 pointer-events-none" />
-
-              {/* Official Logo */}
-              <div className="relative w-full h-full rounded-full overflow-hidden flex items-center justify-center">
-                <Image
-                  src="/main_logo.png"
-                  alt="Master of Pipsology Official Insignia"
-                  fill
-                  className="object-contain p-2.5 drop-shadow-[0_8px_16px_rgba(0,0,0,0.9)]"
-                  priority
-                />
+        {/* ─── CENTER LOGO MEDALLION (concentric with the rings) ─── */}
+        <div className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none select-none">
+          {/* Medallion disc: exact card centre = ring centre */}
+          <div className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 rounded-full shadow-[0_0_60px_rgba(212,175,55,0.5)] transition-transform duration-500 group-hover:scale-105">
+            {/* White face fills the circle; edge sits under the rim */}
+            <div className="absolute inset-[1px] rounded-full overflow-hidden [clip-path:circle(50%)] bg-[#FEFEFE]">
+              <div className="absolute inset-[5%]">
+                <Image src="/main_logo.png" alt="Master of Pipsology Official Insignia" fill
+                  sizes="(min-width: 768px) 176px, (min-width: 640px) 144px, 112px" quality={90}
+                  className="object-contain" />
               </div>
             </div>
-
-            {/* Typography with Metallic Sheen */}
-            <div className="mt-6 text-center">
-              <span className="font-display font-bold text-base sm:text-lg md:text-xl tracking-[0.24em] text-[#FAF6F0] uppercase block drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-                MASTER OF PIPSOLOGY
-              </span>
-              <span className="text-xs sm:text-sm font-mono tracking-[0.28em] text-[#D4AF37] uppercase mt-2 block font-medium">
-                EDUCATION BEFORE EXECUTION
-              </span>
-              <div className="mt-3 flex items-center justify-center gap-3 opacity-75">
-                <span className="h-[1px] w-8 bg-[#D4AF37]/50" />
-                <span className="h-[1px] w-8 bg-[#D4AF37]/50" />
-              </div>
+            {/* Gold rim on top: crisp, concentric. #AA8C2C = #D4AF37 @80% over the old black disc */}
+            <div aria-hidden="true" className="absolute inset-0 rounded-full border-2 border-[#AA8C2C] shadow-[inset_0_0_12px_rgba(212,175,55,0.45)] pointer-events-none" />
+            {/* Inner bezel hairline */}
+            <div aria-hidden="true" className="absolute inset-1.5 rounded-full border border-[#D4AF37]/30 pointer-events-none" />
+          </div>
+          {/* Typography below the disc: 50% + disc radius + 1.5rem */}
+          <div className="absolute inset-x-0 top-[calc(50%_+_5rem)] sm:top-[calc(50%_+_6rem)] md:top-[calc(50%_+_7rem)] px-4 text-center">
+            <span className="font-display font-bold text-base sm:text-lg md:text-xl tracking-[0.24em] text-[#FAF6F0] uppercase block drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
+              MASTER OF PIPSOLOGY
+            </span>
+            <span className="text-xs sm:text-sm font-mono tracking-[0.28em] text-[#D4AF37] uppercase mt-2 block font-medium">
+              EDUCATION BEFORE EXECUTION
+            </span>
+            <div className="mt-3 flex items-center justify-center gap-3 opacity-75">
+              <span className="h-[1px] w-8 bg-[#D4AF37]/50" />
+              <span className="h-[1px] w-8 bg-[#D4AF37]/50" />
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
     </section>
