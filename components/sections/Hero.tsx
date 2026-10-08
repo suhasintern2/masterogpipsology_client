@@ -21,6 +21,10 @@ import { HeroLightLayers } from '@/components/sections/hero/HeroLightLayers';
 import { RevealText } from '@/components/motion/RevealText';
 import { LightLeak } from '@/components/fx/LightLeak';
 import { GoldShimmer } from '@/components/motion/GoldShimmer';
+import dynamic from 'next/dynamic';
+import { gsap } from '@/lib/gsap';
+import { useDeviceTier } from '@/lib/device-tier';
+import { HeroSweep } from '@/components/sections/hero/HeroSweep';
 import { loadProgress } from '@/lib/load-progress';
 import {
   HERO_SUBLINE,
@@ -33,6 +37,17 @@ import {
 } from '@/lib/motion';
 
 if (typeof window !== 'undefined') loadProgress.register('hero-image', 0.45);
+
+// 3D stage is a separate lazy chunk, requested only on the high tier. If it fails to
+// load, release the preloader task and render nothing (the DOM image stays).
+const HeroStage = dynamic(
+  () =>
+    import('@/components/three/hero/HeroStage').catch(() => {
+      loadProgress.complete('hero-3d');
+      return { default: () => null };
+    }),
+  { ssr: false },
+);
 
 export function Hero(): React.ReactElement {
   const ref = useRef<HTMLElement>(null);
@@ -50,6 +65,16 @@ export function Hero(): React.ReactElement {
     if (bgImgRef.current?.complete) markHeroImage();
   }, [markHeroImage]);
   const inView = useInView(ref, { once: true, amount: 0.08 });
+  const tier = useDeviceTier();
+  const lightsRef = useRef<HTMLDivElement>(null);
+
+  // Register before the dynamic 3D import resolves so the preloader waits for it.
+  useEffect(() => {
+    if (tier === 'high') loadProgress.register('hero-3d', 0.25);
+  }, [tier]);
+  const hideLights = useCallback((): void => {
+    if (lightsRef.current) gsap.to(lightsRef.current, { opacity: 0, duration: 0.8 });
+  }, []);
 
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -74,8 +99,12 @@ export function Hero(): React.ReactElement {
           style={{ objectFit: 'cover', objectPosition: '65% center' }}
         />
 
-        <HeroLightLayers contentRef={contentRef} />
+        <div ref={lightsRef} className="absolute inset-0">
+          <HeroLightLayers contentRef={contentRef} />
+        </div>
+        {tier === 'low' && <HeroSweep />}
       </div>
+      {tier === 'high' && <HeroStage onReady={hideLights} />}
       <LightLeak from="right" intensity={0.7} className="fx-leak--bottom" />
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
