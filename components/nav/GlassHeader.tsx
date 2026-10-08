@@ -98,7 +98,7 @@ export function GlassHeader(): React.ReactElement {
         }, 'render'),
       );
 
-      // Gold chips: active state + metallic fill origin.
+      // Gold chips: active state.
       const links = Array.from(ul.querySelectorAll<HTMLAnchorElement>('a.lg-link'));
       let active = -1;
       const setActive = (i: number): void => {
@@ -106,16 +106,6 @@ export function GlassHeader(): React.ReactElement {
         active = i;
         if (i >= 0) { links[i]?.classList.add('is-active'); links[i]?.setAttribute('aria-current', 'location'); }
       };
-      // Metallic fill grows from the pointer entry point and shrinks toward the exit point.
-      const setOrigin = (e: PointerEvent): void => {
-        const a = e.currentTarget as HTMLElement;
-        const r = a.getBoundingClientRect();
-        a.style.setProperty('--fx', `${e.clientX - r.left}px`);
-        a.style.setProperty('--fy', `${e.clientY - r.top}px`);
-      };
-      links.forEach((a) => { a.addEventListener('pointerenter', setOrigin); a.addEventListener('pointerleave', setOrigin); });
-      cleanups.push(() => links.forEach((a) => { a.removeEventListener('pointerenter', setOrigin); a.removeEventListener('pointerleave', setOrigin); }));
-
       NAV_LINKS.forEach((link, i) => {
         const section = document.querySelector(link.href);
         if (!section) return;
@@ -129,39 +119,6 @@ export function GlassHeader(): React.ReactElement {
           },
         });
       });
-
-      // Magnetic hover (desktop fine pointer, not reduced).
-      if (!reduced && window.matchMedia('(hover:hover) and (pointer:fine)').matches) {
-        const targets = Array.from(pill.querySelectorAll<HTMLElement>('[data-magnetic]')).map((el) => ({
-          el,
-          qx: gsap.quickTo(el, 'x', { duration: 0.4, ease: 'power3' }),
-          qy: gsap.quickTo(el, 'y', { duration: 0.4, ease: 'power3' }),
-          inside: false,
-        }));
-        const onMove = (e: PointerEvent): void => {
-          for (const t of targets) {
-            const r = t.el.getBoundingClientRect();
-            const ox = Number(gsap.getProperty(t.el, 'x')) || 0;
-            const oy = Number(gsap.getProperty(t.el, 'y')) || 0;
-            const left = r.left - ox - 12;
-            const right = r.right - ox + 12;
-            const top = r.top - oy - 12;
-            const bottom = r.bottom - oy + 12;
-            const inside = e.clientX >= left && e.clientX <= right && e.clientY >= top && e.clientY <= bottom;
-            if (inside) {
-              t.qx((e.clientX - (left + right) / 2) * 0.25);
-              t.qy((e.clientY - (top + bottom) / 2) * 0.35);
-              t.inside = true;
-            } else if (t.inside) {
-              t.qx(0);
-              t.qy(0);
-              t.inside = false;
-            }
-          }
-        };
-        window.addEventListener('pointermove', onMove, { passive: true });
-        cleanups.push(() => window.removeEventListener('pointermove', onMove));
-      }
 
       // Specular sweep across the glass every 5 s (1.4 s motion + 3.6 s rest).
       const band = bandRef.current;
@@ -229,7 +186,6 @@ export function GlassHeader(): React.ReactElement {
                 <li key={link.href}>
                   <a
                     href={link.href}
-                    data-magnetic
                     className="lg-link font-body font-medium no-underline text-sm"
                   >
                     {link.label}

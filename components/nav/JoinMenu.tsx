@@ -65,7 +65,6 @@ export function JoinMenu(): React.ReactElement {
       <button
         ref={btn}
         type="button"
-        data-magnetic
         className="cap-btn cap-btn--sm join-trigger"
         aria-expanded={open}
         aria-controls="join-menu"
