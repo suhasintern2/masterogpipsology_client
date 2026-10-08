@@ -3,6 +3,7 @@
 import React, { useRef, useCallback } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
 import { loadProgress } from '@/lib/load-progress';
+import { DepthStage } from '@/components/sections/DepthStage';
 import { RevealText } from '@/components/motion/RevealText';
 import {
   buildFrameSet,
@@ -35,8 +36,10 @@ export function CryptoMarketScroll(): React.ReactElement {
   const hudFrameRef = useRef<HTMLSpanElement>(null);
   const hudProgressRef = useRef<HTMLDivElement>(null);
   const lastHud = useRef({ frame: -1, pct: -1 });
+  const progressRef = useRef(0);
 
   const onUpdate = useCallback(({ progress, frame }: FrameSequenceUpdate): void => {
+    progressRef.current = progress;
     const last = lastHud.current;
     if (frame !== last.frame) {
       last.frame = frame;
@@ -79,12 +82,14 @@ export function CryptoMarketScroll(): React.ReactElement {
           contain: 'layout paint',
         }}
       >
-        {/* Canvas fills the sticky wrapper exactly */}
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none z-0"
-          style={{ display: 'block', imageRendering: 'auto' }}
-        />
+        {/* Canvas fills the sticky wrapper exactly; DepthStage adds the 3D tilt */}
+        <DepthStage progressRef={progressRef} zIndex={0}>
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{ display: 'block', imageRendering: 'auto' }}
+          />
+        </DepthStage>
 
         {/* Editorial overlay – transform/opacity only, no layout properties */}
         <div

@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
 import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
+import { DepthStage } from '@/components/sections/DepthStage';
 import { RevealText } from '@/components/motion/RevealText';
 import {
   buildFrameSet,
@@ -73,6 +74,8 @@ const urlsFor = (tier: FrameTier): FrameSet =>
   buildFrameSet(['forex', 'stock_market', 'opportunity'], tier, FRAMES_PER_SEQ, UNIQUE_LOCAL);
 const PINNED = [0, TOTAL_FRAMES - 1] as const;
 const FOREX_WARM = warmIndices(PER);
+// Tilt reaches exactly 0 before the doorway dissolve starts, so the last frame matches the video lock.
+const TILT_EASE = [at(-140), at(0)] as const;
 const frameForProgress = (p: number, total: number): number =>
   p < FRAME_SCROLL_PORTION
     ? Math.min(total - 1, Math.max(0, Math.round((p / FRAME_SCROLL_PORTION) * (total - 1))))
@@ -307,16 +310,17 @@ export function ForexMarketScroll(): React.ReactElement {
         </div>
 
         {/* Layer 1: Single canvas – drawing surface for the 720 cinematic frames */}
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none z-10"
-          style={{
-            display: 'block',
-            imageRendering: 'auto',
-            willChange: 'opacity',
-          }}
-        />
-
+        <DepthStage progressRef={progressRef} easeOut={TILT_EASE} zIndex={10}>
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{
+              display: 'block',
+              imageRendering: 'auto',
+              willChange: 'opacity',
+            }}
+          />
+        </DepthStage>
 
         {/* Layer 3: HUD and Editorial Overlays */}
         <div
