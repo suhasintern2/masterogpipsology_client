@@ -80,6 +80,24 @@ async function main() {
     await sharp(buf, { raw: { width: n, height: n, channels: 4 } }).png().toFile(out);
     console.log('wrote', out);
   }
+
+  const logo = (n) => sharp('public/main_logo.png').resize(n, n, { kernel: 'lanczos3' }).png({ compressionLevel: 9 });
+  for (const [name, n] of [['icon-192', 192], ['icon-512', 512], ['apple-icon-180', 180]]) {
+    out = `public/brand/${name}.png`;
+    if (shouldWrite(out)) {
+      await logo(n).toFile(out);
+      console.log('wrote', out);
+    }
+  }
+
+  out = 'public/hero/hero-master-3840.jpg';
+  if (shouldWrite(out)) {
+    await sharp('hero.png', { limitInputPixels: false })
+      .resize({ width: 3840, kernel: 'lanczos3', withoutEnlargement: true })
+      .jpeg({ quality: 90, mozjpeg: true, chromaSubsampling: '4:4:4' })
+      .toFile(out);
+    console.log('wrote', out);
+  }
 }
 
 main().catch((e) => {

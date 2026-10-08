@@ -31,7 +31,7 @@ export default function Page(): React.ReactElement {
       <Preloader />
       <PaletteBackdrop />
       <Grain />
-      <LongTaskProbe />
+      {process.env.NODE_ENV !== 'production' && <LongTaskProbe />}
       {/* Fixed navigation */}
       <GlassHeader />
 

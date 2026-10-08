@@ -8,7 +8,7 @@ import React from 'react';
 
 import { useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
-import heroImg from '@/hero.png';
+import heroImg from '@/public/hero/hero-master-3840.jpg';
 import { motion, useInView } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { TypingHeading } from '@/components/ui/TypingHeading';

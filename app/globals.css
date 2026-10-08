@@ -669,7 +669,7 @@ html.js .rt-pending {
 
 .fx-grain {
   position: fixed;
-  inset: -50%;
+  inset: -12%;
   z-index: 60;
   pointer-events: none;
   background: url(/textures/grain-256.png);

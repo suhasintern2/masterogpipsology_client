@@ -191,6 +191,10 @@ For frame count changes (RIFE), update `TOTAL_FRAMES`, `*_FRAMES`, and `PINNED` 
 
 ---
 
+**Cache-busting rule:** files under /assets, /frames, /textures and /hero are immutable for one year (`next.config.ts` headers). Never replace a file in place: write a new folder (e.g. /frames/v2) and bump FRAME_SET_VERSION.
+
+---
+
 ## Summary
 
 1. **Install tools** (ffmpeg, libwebp, libavif, Real-ESRGAN, optionally RIFE).
