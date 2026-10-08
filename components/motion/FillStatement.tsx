@@ -24,7 +24,7 @@ export function FillStatement({
   id,
 }: FillStatementProps): React.ReactElement {
   const ref = useRef<HTMLElement>(null);
-  const Tag = as as React.ElementType;
+  const Tag = as as unknown as React.ComponentType<React.HTMLAttributes<HTMLElement> & { ref?: React.Ref<HTMLElement> }>;
 
   useGSAP(
     () => {
