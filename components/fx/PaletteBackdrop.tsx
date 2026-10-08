@@ -24,9 +24,9 @@ export function PaletteBackdrop(): React.ReactElement {
           },
         );
       }
-      // #sculpture arrives with Phase 5/6; skipped until it exists.
-      const sculpture = document.getElementById('sculpture');
-      if (sculpture) {
+      // #hallmark (HallmarkDial) drives the gold backdrop glow; skipped until it exists.
+      const hallmark = document.getElementById('hallmark');
+      if (hallmark) {
         const gold = q('.pb-gold');
         gsap.fromTo(
           gold,
@@ -34,14 +34,14 @@ export function PaletteBackdrop(): React.ReactElement {
           {
             opacity: 1,
             ease: 'none',
-            scrollTrigger: { trigger: sculpture, start: 'top bottom', end: 'center center', scrub: true },
+            scrollTrigger: { trigger: hallmark, start: 'top bottom', end: 'center center', scrub: true },
           },
         );
         gsap.to(gold, {
           opacity: 0,
           ease: 'none',
           immediateRender: false,
-          scrollTrigger: { trigger: sculpture, start: 'center center', end: 'bottom top', scrub: true },
+          scrollTrigger: { trigger: hallmark, start: 'center center', end: 'bottom top', scrub: true },
         });
       }
     },

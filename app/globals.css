@@ -758,3 +758,39 @@ html.js .rt-pending {
 .tl-num { color: rgba(168, 161, 150, 0.55); transition: color 0.4s ease; }
 .tl-node[data-on='true'] .tl-gold { opacity: 1; }
 .tl-node[data-on='true'] .tl-num { color: #D4AF37; }
+
+/* ─── Hallmark dial ─── */
+.hm-section { height: 220vh; }
+.hm-sticky { position: sticky; top: 0; height: 100dvh; display: grid; place-items: center; overflow: hidden; }
+.hm-dial { position: relative; width: min(86vw, 78dvh, 760px); aspect-ratio: 1; will-change: transform, opacity; container-type: inline-size; }
+.hm-layer, .hm-sheen, .hm-glow { position: absolute; inset: 0; width: 100%; height: 100%; transform-origin: 50% 50%; }
+.hm-layer, .hm-sheen { will-change: transform; }
+.hm-glow { inset: -18%; width: auto; height: auto; border-radius: 50%;
+  background: radial-gradient(circle, rgba(212,175,55,.16) 0%, rgba(140,100,30,.08) 38%, transparent 66%); }
+.hm-sheen { border-radius: 50%; mix-blend-mode: screen; pointer-events: none; }
+.hm-sheen--outer {
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(255,240,205,0) 20deg, rgba(255,240,205,.42) 42deg,
+    rgba(255,240,205,0) 66deg, transparent 200deg, rgba(255,236,190,.22) 228deg, transparent 252deg);
+  -webkit-mask: radial-gradient(circle, transparent 69%, #000 70%, #000 98.4%, transparent 98.6%);
+          mask: radial-gradient(circle, transparent 69%, #000 70%, #000 98.4%, transparent 98.6%);
+}
+.hm-sheen--inner {
+  opacity: .55;
+  background: conic-gradient(from 90deg, transparent 0deg, rgba(255,240,205,.3) 30deg, transparent 60deg,
+    transparent 180deg, rgba(255,240,205,.18) 210deg, transparent 240deg);
+  -webkit-mask: radial-gradient(circle, transparent 29%, #000 31%, #000 67.5%, transparent 68%);
+          mask: radial-gradient(circle, transparent 29%, #000 31%, #000 67.5%, transparent 68%);
+}
+.hm-sign { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; color: #EADBB5; border-radius: 50%;
+  background: radial-gradient(circle, rgba(8,8,10,.86) 0%, rgba(8,8,10,.7) 22%, transparent 34%); }
+.hm-sign__pre { font-family: var(--font-display); font-style: italic; font-size: clamp(14px, 3.4cqi, 26px); opacity: .85; }
+.hm-sign__name { font-family: var(--font-display); font-weight: 500; text-transform: uppercase; letter-spacing: .18em;
+  font-size: clamp(20px, 6.2cqi, 46px); line-height: 1.05; margin-right: -.18em;
+  background: linear-gradient(180deg, #F6E7BF, #C9A245 60%, #8C6D23); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.hm-sign__rule { width: 18%; height: 1px; margin: .9em 0 .8em; background: linear-gradient(90deg, transparent, #D4AF37, transparent); }
+.hm-sign__tag { font-family: var(--font-body); font-size: clamp(9px, 1.9cqi, 12px); letter-spacing: .3em; text-transform: uppercase; color: #B9A27A; margin-right: -.3em; }
+@media (prefers-reduced-motion: reduce) {
+  .hm-section { height: auto; }
+  .hm-sticky { position: relative; height: auto; min-height: 100svh; }
+}

@@ -9,7 +9,7 @@ import { GlassHeader } from '@/components/nav/GlassHeader';
 import { Hero } from '@/components/sections/Hero';
 import { CryptoMarketScroll } from '@/components/sections/CryptoMarketScroll';
 import { ForexMarketScroll } from '@/components/sections/ForexMarketScroll';
-import { SculptureInterlude } from '@/components/sections/SculptureInterlude';
+import { HallmarkDial } from '@/components/sections/HallmarkDial';
 import { Markets } from '@/components/sections/Markets';
 import { MomentsReel } from '@/components/sections/MomentsReel';
 import { LuxuryTeamGallery } from '@/components/sections/LuxuryTeamGallery';
@@ -54,8 +54,8 @@ export default function Page(): React.ReactElement {
           {/* 720-frame sticky scroll sequence: Forex + Stock Market + Opportunity */}
           <ForexMarketScroll />
 
-          {/* Text-free gold sculpture beat between Forex and the dark sections */}
-          <SculptureInterlude />
+          {/* Hallmark dial: guilloché gold beat between Forex and the dark sections */}
+          <HallmarkDial />
 
           {/* ── PERSISTENT LUXURY BLACK EFFECT (Stays black all the way to page end) ── */}
           <div data-nav-tone="dark" className="theme-black-section relative w-full text-[#F5EFEB]">
