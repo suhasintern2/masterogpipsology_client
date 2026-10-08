@@ -8,14 +8,18 @@ import {
   buildFrameSet,
   warmFirstFrame,
   warmIndices,
+  FRAMES_PER_SEQ,
+  SEQ_SCROLL_VH,
+  UNIQUE_LOCAL,
+  UNIQUE_PER_SEQ,
   type FrameSet,
   type FrameTier,
 } from '@/lib/frame-sequence/sources';
 
 // ── Tunable constants ────────────────────────────────────────────────────────
-const TOTAL_FRAMES = 240;
+const TOTAL_FRAMES = UNIQUE_PER_SEQ; // 192 unique of 240
 
-const urlsFor = (tier: FrameTier): FrameSet => buildFrameSet(['crypto'], tier);
+const urlsFor = (tier: FrameTier): FrameSet => buildFrameSet(['crypto'], tier, FRAMES_PER_SEQ, UNIQUE_LOCAL);
 const PINNED = [0, TOTAL_FRAMES - 1] as const;
 // First 24 frames, then every 8th: a coarse fallback exists before the full fetch starts.
 const CRYPTO_WARM = warmIndices(TOTAL_FRAMES);
@@ -36,7 +40,7 @@ export function CryptoMarketScroll(): React.ReactElement {
     const last = lastHud.current;
     if (frame !== last.frame) {
       last.frame = frame;
-      if (hudFrameRef.current) hudFrameRef.current.textContent = String(frame + 1).padStart(3, '0');
+      if (hudFrameRef.current) hudFrameRef.current.textContent = String((UNIQUE_LOCAL[frame] ?? frame) + 1).padStart(3, '0');
     }
     const pct = Math.round(progress * 100);
     if (pct !== last.pct) {
@@ -63,7 +67,7 @@ export function CryptoMarketScroll(): React.ReactElement {
       id="crypto-sequence"
       aria-label="Crypto Market Interactive Scroll Sequence"
       className="relative w-full"
-      style={{ height: '450vh', backgroundColor: '#EFE7DC' }}
+      style={{ height: `${SEQ_SCROLL_VH + 100}vh`, backgroundColor: '#EFE7DC' }}
     >
       {/* Sticky viewport – contain: layout paint avoids unnecessary compositing */}
       <div
