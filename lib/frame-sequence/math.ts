@@ -102,16 +102,24 @@ export function pickNextFetch(
   dir: number,
   nearWindow: number,
   full: boolean,
+  warm: readonly number[] = [],
+  notBefore?: ArrayLike<number>,
+  now: number = 0,
 ): number {
   for (let k = 0; k < pinned.length; k++) {
     const p = pinned[k];
-    if (p >= 0 && p < state.length && state[p] === 0) return p;
+    if (p >= 0 && p < state.length && state[p] === 0 && !(notBefore && notBefore[p] > now)) return p;
+  }
+  for (let k = 0; k < warm.length; k++) {
+    const w = warm[k];
+    if (w >= 0 && w < state.length && state[w] === 0 && !(notBefore && notBefore[w] > now)) return w;
   }
   if (!full) return -1;
   let best = -1;
   let bestScore = Infinity;
   for (let i = 0; i < state.length; i++) {
     if (state[i] !== 0) continue;
+    if (notBefore && notBefore[i] > now) continue;
     const s = fetchScore(i, current, dir, nearWindow);
     if (s < bestScore) { bestScore = s; best = i; }
   }
@@ -137,6 +145,7 @@ export function pickNextDecode(
   dir: number,
   lo: number,
   hi: number,
+  stride: number = 1,
 ): number {
   for (let k = 0; k < pinned.length; k++) {
     const p = pinned[k];
@@ -145,6 +154,15 @@ export function pickNextDecode(
   if (lo > hi) return -1;
   const step = dir >= 0 ? 1 : -1;
   const maxD = Math.max(Math.abs(hi - current), Math.abs(current - lo));
+  if (stride > 1) {
+    for (let d = 0; d <= maxD; d++) {
+      const ahead = current + step * d;
+      if (ahead >= lo && ahead <= hi && ahead >= 0 && ahead < needs.length && ahead % stride === 0 && needs[ahead]) return ahead;
+      if (d === 0) continue;
+      const behind = current - step * d;
+      if (behind >= lo && behind <= hi && behind >= 0 && behind < needs.length && behind % stride === 0 && needs[behind]) return behind;
+    }
+  }
   for (let d = 0; d <= maxD; d++) {
     const ahead = current + step * d;
     if (ahead >= lo && ahead <= hi && ahead >= 0 && ahead < needs.length && needs[ahead]) return ahead;
@@ -158,10 +176,37 @@ export function pickNextDecode(
 const MB = 1024 * 1024;
 
 /** Max decoded frames for this canvas (see plan A3). */
-export function bitmapBudget(backing: Size, deviceMemoryGB: number | undefined, total: number): number {
-  const mem = deviceMemoryGB === undefined ? 4 : deviceMemoryGB;
-  const budget = (mem >= 8 ? 384 : mem >= 4 ? 256 : 128) * MB;
-  const bytes = Math.max(1, backing.w * backing.h * 4);
+export function bitmapBudget(bitmap: Size, deviceMemoryGB: number | undefined, total: number, coarsePointer: boolean = false): number {
+  let mb = deviceMemoryGB === undefined ? (coarsePointer ? 160 : 256) : deviceMemoryGB >= 8 ? 384 : deviceMemoryGB >= 4 ? 256 : 128;
+  if (coarsePointer) mb = Math.min(mb, 192);
+  const bytes = Math.max(1, bitmap.w * bitmap.h * 4);
   const hi = Math.min(total, 240);
-  return Math.min(hi, Math.max(16, Math.floor(budget / bytes)));
+  return Math.min(hi, Math.max(16, Math.floor((mb * MB) / bytes)));
+}
+
+/** EMA of frame velocity (frames/s). dtSec <= 0 returns prev. Snaps to 0 below 0.5 f/s. */
+export function frameVelocity(prev: number, deltaFrames: number, dtSec: number): number {
+  if (!(dtSec > 0)) return prev;
+  const inst = deltaFrames / Math.max(dtSec, 1 / 240);
+  const a = 1 - Math.exp(-dtSec / 0.1);
+  const v = prev + (inst - prev) * a;
+  return Math.abs(v) < 0.5 ? 0 : v;
+}
+
+/** Split a decode window of `windowSize` bitmaps into ahead/behind (in scroll direction), velocity-aware. */
+export function lookahead(speed: number, windowSize: number, horizonSec: number = 0.5, minAhead: number = 6): { ahead: number; behind: number } {
+  const w = Math.max(2, Math.floor(windowSize));
+  const want = Math.max(Math.ceil(w * 0.55), Math.round(Math.abs(speed) * horizonSec), minAhead);
+  const ahead = Math.min(w - 2, want);
+  return { ahead, behind: w - ahead };
+}
+
+/** Decode every Nth frame ahead when the window cannot cover `horizonSec` of travel. 1..4. */
+export function decodeStride(speed: number, ahead: number, horizonSec: number = 0.5): number {
+  return clamp(Math.ceil((Math.abs(speed) * horizonSec) / Math.max(1, ahead)), 1, 4);
+}
+
+/** Fetch retry backoff: 500, 1000, 2000, 4000, then 8000 ms max. attempt >= 1. */
+export function retryDelayMs(attempt: number): number {
+  return Math.min(8000, 500 * 2 ** Math.max(0, attempt - 1));
 }

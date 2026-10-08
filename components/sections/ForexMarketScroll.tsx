@@ -61,7 +61,7 @@ function resolveSeq(globalIdx: number): { seq: SeqInfo; localIdx: number } {
 }
 
 const SOURCES = SEQUENCES.map((s) => ({ count: s.frames, src: s.getSrc }));
-const PINNED = [0, 239, 240, 479, 480, 719] as const;
+const PINNED = [0, 719] as const;
 const frameForProgress = (p: number, total: number): number =>
   p < FRAME_SCROLL_PORTION
     ? Math.min(total - 1, Math.max(0, Math.floor((p / FRAME_SCROLL_PORTION) * total)))
@@ -252,6 +252,7 @@ export function ForexMarketScroll(): React.ReactElement {
     pinned: PINNED,
     frameForProgress,
     background: '#050505',
+    prefetchMargin: '400% 0px 400% 0px',
     onUpdate,
     onActiveChange,
   });

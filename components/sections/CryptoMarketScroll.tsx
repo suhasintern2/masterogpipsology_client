@@ -15,6 +15,8 @@ const getFrameSrc = (index: number): string => {
 
 const SOURCES = [{ count: TOTAL_FRAMES, src: getFrameSrc }] as const;
 const PINNED = [0, TOTAL_FRAMES - 1] as const;
+// First 24 frames, then every 8th: a coarse fallback exists before the full fetch starts.
+const CRYPTO_WARM = Array.from({ length: 24 }, (_, i) => i).concat(Array.from({ length: 27 }, (_, k) => 24 + k * 8));
 if (typeof window !== 'undefined') loadProgress.register('crypto-first-frame', 0.15);
 const frameForProgress = (p: number, total: number): number =>
   Math.min(total - 1, Math.max(0, Math.round(p * (total - 1))));
@@ -41,6 +43,7 @@ export function CryptoMarketScroll(): React.ReactElement {
   const { sectionRef, stickyRef, canvasRef } = useFrameSequence({
     sources: SOURCES,
     pinned: PINNED,
+    warm: CRYPTO_WARM,
     frameForProgress,
     background: '#EFE7DC',
     onUpdate,

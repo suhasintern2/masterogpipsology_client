@@ -24,6 +24,8 @@ export interface UseFrameSequenceOptions {
   frameForProgress: (progress: number, total: number) => number;
   /** Global indices fetched first and never evicted. */
   pinned?: readonly number[];
+  /** Global indices fetched right after pinned, before the full fetch. */
+  warm?: readonly number[];
   background: string;
   /** Damping rate, used ONLY when Lenis is inactive and motion is allowed. Default 12. */
   smoothing?: number;
@@ -92,6 +94,8 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
     const engine = new FrameSequenceEngine({
       urls,
       pinned: optsRef.current.pinned ?? [],
+      warm: optsRef.current.warm ?? [],
+      expectedSize: { w: 1920, h: 1080 },
       background: optsRef.current.background,
       onFrameReady: (i) => optsRef.current.onFrameReady?.(i),
     });
@@ -185,6 +189,11 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
     );
     activeIO.observe(section);
 
+    // No requests or decodes while the tab is hidden.
+    const onVis = (): void => engine.setPaused(document.hidden);
+    onVis();
+    document.addEventListener('visibilitychange', onVis);
+
     // Keep frame requests behind the hero LCP.
     let idleId: number | null = null;
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -204,6 +213,7 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
       decodeIO.disconnect();
       activeIO.disconnect();
       mq.removeEventListener('change', onMq);
+      document.removeEventListener('visibilitychange', onVis);
       if (idleId !== null) window.cancelIdleCallback(idleId);
       if (timeoutId !== null) clearTimeout(timeoutId);
       engine.destroy();

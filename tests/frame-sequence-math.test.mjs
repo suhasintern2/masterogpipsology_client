@@ -12,6 +12,10 @@ import {
   decodeWindow,
   pickNextDecode,
   bitmapBudget,
+  frameVelocity,
+  lookahead,
+  decodeStride,
+  retryDelayMs,
 } from '../lib/frame-sequence/math.ts';
 
 test('sectionProgress', () => {
@@ -113,4 +117,61 @@ test('bitmapBudget', () => {
   assert.equal(bitmapBudget({ w: 3000, h: 3000 }, 1, 240), 16);
   assert.equal(bitmapBudget({ w: 100, h: 100 }, 8, 240), 240);
   assert.equal(bitmapBudget({ w: 100, h: 100 }, 8, 100), 100);
+});
+
+test('frameVelocity', () => {
+  let v = 0;
+  for (let i = 0; i < 30; i++) v = frameVelocity(v, 4, 1 / 60);
+  assert.ok(Math.abs(v - 240) / 240 < 0.05);
+  assert.equal(frameVelocity(240, 0, 1), 0);
+  assert.equal(frameVelocity(7, 3, 0), 7);
+});
+
+test('lookahead', () => {
+  assert.deepEqual(lookahead(0, 16), { ahead: 9, behind: 7 });
+  assert.deepEqual(lookahead(300, 16), { ahead: 14, behind: 2 });
+  assert.deepEqual(lookahead(0, 40), { ahead: 22, behind: 18 });
+  for (const w of [8, 16, 53]) {
+    const { ahead, behind } = lookahead(100, w);
+    assert.equal(ahead + behind, w);
+  }
+});
+
+test('decodeStride', () => {
+  assert.equal(decodeStride(0, 14), 1);
+  assert.equal(decodeStride(300, 14), 4);
+  assert.equal(decodeStride(40, 20), 1);
+  assert.equal(decodeStride(100, 20), 3);
+});
+
+test('retryDelayMs', () => {
+  assert.equal(retryDelayMs(1), 500);
+  assert.equal(retryDelayMs(2), 1000);
+  assert.equal(retryDelayMs(3), 2000);
+  assert.equal(retryDelayMs(5), 8000);
+  assert.equal(retryDelayMs(10), 8000);
+});
+
+test('pickNextFetch with backoff and warm', () => {
+  const state = new Uint8Array(10);
+  const notBefore = new Float64Array(10);
+  notBefore[0] = 1000;
+  assert.equal(pickNextFetch(state, [0], 0, 1, 4, false, [], notBefore, 500), -1);
+  assert.equal(pickNextFetch(state, [0], 0, 1, 4, false, [5], notBefore, 500), 5);
+  assert.equal(pickNextFetch(state, [0], 0, 1, 4, false, [], notBefore, 1500), 0);
+});
+
+test('pickNextDecode with stride', () => {
+  const needs = new Uint8Array(40);
+  for (let i = 10; i <= 30; i++) needs[i] = 1;
+  assert.equal(pickNextDecode(needs, [], 10, 1, 10, 30, 4), 12);
+  for (let i = 0; i < 40; i += 4) needs[i] = 0;
+  assert.equal(pickNextDecode(needs, [], 10, 1, 10, 30, 4), 10);
+});
+
+test('bitmapBudget with coarse pointer', () => {
+  assert.equal(bitmapBudget({ w: 864, h: 1080 }, undefined, 240, true), 44);
+  assert.equal(bitmapBudget({ w: 864, h: 1080 }, 8, 240, true), 53);
+  assert.equal(bitmapBudget({ w: 1920, h: 1080 }, 8, 240), 48);
+  assert.equal(bitmapBudget({ w: 1920, h: 1080 }, 4, 240), 32);
 });
