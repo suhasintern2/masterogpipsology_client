@@ -1,9 +1,13 @@
 'use client';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { gsap, useGSAP } from '@/lib/gsap';
-import MagicRings from '@/components/MagicRings';
+
+// three is only fetched once the showcase is near the viewport (keeps it out of first-load JS).
+const MagicRings = dynamic(() => import('@/components/MagicRings'), { ssr: false });
+
 
 type Kf = [t: number, v: number];
 
@@ -24,6 +28,23 @@ export function MagicRingShowcase(): React.ReactElement {
   const cardRef = useRef<HTMLDivElement>(null);
   const auraRef = useRef<HTMLDivElement>(null);
   const medallionRef = useRef<HTMLDivElement>(null);
+  const [nearViewport, setNearViewport] = useState(false);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el || nearViewport) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setNearViewport(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: '600px 0px' },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [nearViewport]);
 
   // One scrubbed timeline replaces the four framer useScroll/useSpring chains.
   // start end -> end start matches the old offsets (centre-centre is progress 0.5).
@@ -90,7 +111,7 @@ export function MagicRingShowcase(): React.ReactElement {
 
         {/* ─── WEBGL MAGIC RINGS BACKGROUND ─── */}
         <div className="absolute inset-0 z-0">
-          <MagicRings
+          {nearViewport && <MagicRings
             color="#D4AF37"
             colorTwo="#FAF1DE"
             ringCount={7}
@@ -105,7 +126,7 @@ export function MagicRingShowcase(): React.ReactElement {
             mouseInfluence={0.25}
             hoverScale={1.14}
             clickBurst={true}
-          />
+          />}
         </div>
 
         {/* ─── EXPANDING GOLDEN AURA (Scroll Reactive) ─── */}
