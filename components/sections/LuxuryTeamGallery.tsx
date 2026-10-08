@@ -14,13 +14,17 @@ export function LuxuryTeamGallery(): React.ReactElement {
   const [activeTab, setActiveTab] = useState<'faculty' | 'moments'>('faculty');
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const sliderRef = useRef<HTMLDivElement>(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  const lastScale = useRef(0.15);
 
   const updateScrollProgress = () => {
     if (!sliderRef.current) return;
     const { scrollLeft, scrollWidth, clientWidth } = sliderRef.current;
     const total = scrollWidth - clientWidth;
-    setScrollProgress(total > 0 ? scrollLeft / total : 0);
+    const scale = Math.max(0.15, total > 0 ? scrollLeft / total : 0);
+    if (Math.abs(scale - lastScale.current) < 0.001) return;
+    lastScale.current = scale;
+    if (progressBarRef.current) progressBarRef.current.style.transform = `scaleX(${scale})`;
   };
 
   const scrollByAmount = (amount: number) => {
@@ -184,9 +188,10 @@ export function LuxuryTeamGallery(): React.ReactElement {
             {/* Interactive Progress Bar */}
             <div className="mt-2 flex items-center justify-between gap-4">
               <div className="flex-1 h-1 bg-white/[0.08] rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-gradient-to-r from-[#D4AF37] to-[#FAF1DE] rounded-full"
-                  style={{ width: `${Math.max(15, scrollProgress * 100)}%` }}
+                <div
+                  ref={progressBarRef}
+                  className="h-full w-full bg-gradient-to-r from-[#D4AF37] to-[#FAF1DE] rounded-full"
+                  style={{ transform: `scaleX(0.15)`, transformOrigin: '0 50%' }}
                 />
               </div>
               <span className="text-[11px] font-mono text-[#8C8477]">

@@ -15,8 +15,9 @@ import React from 'react';
 
 import { useRef } from 'react';
 import Image from 'next/image';
-import { motion, useInView, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
+import { HeroLightLayers } from '@/components/sections/hero/HeroLightLayers';
 import { TypingHeading } from '@/components/ui/TypingHeading';
 import {
   HERO_SUBLINE,
@@ -32,43 +33,7 @@ export function Hero(): React.ReactElement {
   const ref = useRef<HTMLElement>(null);
   const inView = useInView(ref, { once: true, amount: 0.08 });
 
-  // Scroll inside the hero section only
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ['start start', 'end start'],
-  });
-
-  const smooth = useSpring(scrollYProgress, { stiffness: 40, damping: 28, mass: 1 });
-
-  // ── Gradient light play transforms ────────────────────────────────────────
-  // Orb 1: primary warm morning sun — drifts up and slightly left as you scroll
-  const orb1Y   = useTransform(smooth, [0, 1], ['8%',  '-18%']);
-  const orb1X   = useTransform(smooth, [0, 1], ['68%',  '52%']);
-  const orb1Opacity = useTransform(smooth, [0, 0.3, 0.8, 1], [0.55, 0.72, 0.4, 0.2]);
-  const orb1Scale = useTransform(smooth, [0, 1], [1, 1.35]);
-
-  // Orb 2: secondary warm fill — comes from lower left, drifts up-right
-  const orb2Y   = useTransform(smooth, [0, 1], ['70%', '20%']);
-  const orb2X   = useTransform(smooth, [0, 1], ['10%', '32%']);
-  const orb2Opacity = useTransform(smooth, [0, 0.4, 1], [0.0, 0.38, 0.18]);
-
-  // Orb 3: cool ambient rim — appears at mid-scroll, sweeps from right
-  const orb3X   = useTransform(smooth, [0, 0.3, 1], ['110%', '85%', '60%']);
-  const orb3Opacity = useTransform(smooth, [0, 0.25, 0.7, 1], [0, 0.28, 0.42, 0.18]);
-
-  // Light shaft: golden ray that rotates from 105° → 88° (subtle angular shift)
-  const shaftRotate = useTransform(smooth, [0, 1], [105, 84]);
-  const shaftOpacity = useTransform(smooth, [0, 0.15, 0.6, 1], [0, 0.18, 0.28, 0.08]);
-
-  // Scrim: the left-side dark text legibility scrim lifts slightly on scroll
-  // (text fades away as hero exits — less contrast needed)
-  const scrimOpacity = useTransform(smooth, [0, 0.5, 1], [1, 0.8, 0.45]);
-
-  // Bottom fade — shifts from beige-blend to transparent as user scrolls down
-  const bottomFadeOpacity = useTransform(smooth, [0, 0.7, 1], [1, 0.6, 0.3]);
-
-  // Overall hero parallax — content drifts upward at 0.4× scroll speed
-  const heroContentY = useTransform(smooth, [0, 1], ['0%', '-12%']);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   return (
     <section
@@ -80,158 +45,22 @@ export function Hero(): React.ReactElement {
       {/* ── Background image ────────────────────────────────────────────────── */}
       <div className="absolute inset-0" aria-hidden="true">
         <Image
-          src="/background_image.png"
+          src="/hero/hero-3200.jpg"
           alt=""
           fill
-          priority
+          preload
+          fetchPriority="high"
           sizes="100vw"
           style={{ objectFit: 'cover', objectPosition: '65% center' }}
         />
 
-        {/* ── Gradient Light Layer 1: Warm morning sun orb ─────────────────
-            Primary atmospheric light source. Drifts upward-left on scroll
-            simulating the sun rising / camera tilting up. */}
-        <motion.div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: orb1Y,
-            left: orb1X,
-            width: 'clamp(400px, 65vw, 900px)',
-            height: 'clamp(400px, 65vw, 900px)',
-            borderRadius: '50%',
-            background: `
-              radial-gradient(
-                circle,
-                rgba(255, 220, 140, 0.70) 0%,
-                rgba(245, 190, 90, 0.45) 20%,
-                rgba(235, 170, 70, 0.25) 40%,
-                rgba(220, 150, 60, 0.10) 60%,
-                transparent 78%
-              )
-            `,
-            filter: 'blur(55px)',
-            opacity: orb1Opacity,
-            scale: orb1Scale,
-            translateX: '-50%',
-            translateY: '-50%',
-            mixBlendMode: 'screen',
-          }}
-        />
-
-        {/* ── Gradient Light Layer 2: Warm ground fill ──────────────────────
-            Secondary warm light that rises from lower-left on scroll.
-            Simulates warm reflected light from the ground. */}
-        <motion.div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: orb2Y,
-            left: orb2X,
-            width: 'clamp(300px, 50vw, 700px)',
-            height: 'clamp(300px, 50vw, 700px)',
-            borderRadius: '50%',
-            background: `
-              radial-gradient(
-                circle,
-                rgba(240, 200, 120, 0.60) 0%,
-                rgba(230, 175, 90, 0.30) 35%,
-                rgba(215, 155, 65, 0.10) 60%,
-                transparent 80%
-              )
-            `,
-            filter: 'blur(70px)',
-            opacity: orb2Opacity,
-            translateX: '-50%',
-            translateY: '-50%',
-            mixBlendMode: 'overlay',
-          }}
-        />
-
-        {/* ── Gradient Light Layer 3: Cool atmospheric rim ──────────────────
-            A cooler, silver-blue rim light that enters from the right
-            on scroll — adds colour temperature contrast and depth. */}
-        <motion.div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: '30%',
-            left: orb3X,
-            width: 'clamp(250px, 40vw, 600px)',
-            height: 'clamp(250px, 40vw, 600px)',
-            borderRadius: '50%',
-            background: `
-              radial-gradient(
-                circle,
-                rgba(200, 215, 240, 0.55) 0%,
-                rgba(190, 205, 230, 0.28) 35%,
-                rgba(175, 190, 215, 0.10) 60%,
-                transparent 80%
-              )
-            `,
-            filter: 'blur(60px)',
-            opacity: orb3Opacity,
-            translateX: '-50%',
-            translateY: '-50%',
-            mixBlendMode: 'screen',
-          }}
-        />
-
-        {/* ── Gradient Light Layer 4: Rotating golden light shaft ───────────
-            A diagonal crepuscular ray that subtly rotates as you scroll.
-            Creates the impression of morning light shifting over a building. */}
-        <motion.div
-          aria-hidden="true"
-          style={{
-            position: 'absolute',
-            top: '-10%',
-            left: '35%',
-            width: '180%',
-            height: '180%',
-            background: `
-              linear-gradient(
-                ${shaftRotate}deg,
-                transparent 30%,
-                rgba(255, 225, 130, 0.18) 45%,
-                rgba(255, 225, 130, 0.28) 50%,
-                rgba(255, 225, 130, 0.18) 55%,
-                transparent 70%
-              )
-            `,
-            opacity: shaftOpacity,
-            transformOrigin: '0% 0%',
-            pointerEvents: 'none',
-          }}
-        />
-
-        {/* ── Left-side dark scrim — text legibility, lifts on scroll ───────
-            Provides contrast for the headline text. Reduces as hero exits
-            since text fades away and contrast is no longer needed. */}
-        <motion.div
-          aria-hidden="true"
-          className="absolute inset-0"
-          style={{
-            opacity: scrimOpacity,
-            background:
-              'linear-gradient(108deg, rgba(14,14,18,0.68) 0%, rgba(14,14,18,0.44) 38%, rgba(14,14,18,0.10) 62%, transparent 80%)',
-          }}
-        />
-
-        {/* ── Bottom fade — hero blends into beige ──────────────────────── */}
-        <motion.div
-          aria-hidden="true"
-          className="absolute inset-x-0 bottom-0 h-48"
-          style={{
-            opacity: bottomFadeOpacity,
-            background: 'linear-gradient(to bottom, transparent 0%, var(--bg) 100%)',
-          }}
-        />
+        <HeroLightLayers contentRef={contentRef} />
       </div>
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
-      <motion.div
+      <div
+        ref={contentRef}
         className="relative z-10 w-full max-w-7xl mx-auto px-5 sm:px-8 md:px-12 lg:px-16 pt-28 sm:pt-32 pb-24 sm:pb-28"
-        style={{ y: heroContentY }}
       >
         {/* Text column */}
         <div className="max-w-xl lg:max-w-2xl flex flex-col gap-5 sm:gap-6">
@@ -313,7 +142,7 @@ export function Hero(): React.ReactElement {
             </Button>
           </motion.div>
         </div>
-      </motion.div>
+      </div>
     </section>
   );
 }

@@ -1,37 +1,50 @@
 'use client';
 import React, { useRef } from 'react';
 import Image from 'next/image';
-import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
+import { motion } from 'framer-motion';
+import { gsap, useGSAP } from '@/lib/gsap';
 import MagicRings from '@/components/MagicRings';
 
+type Kf = [t: number, v: number];
+
+/** Piecewise-linear keyframes (t in 0..1) as sequential tweens on a scrubbed timeline. */
+function keyframes(tl: gsap.core.Timeline, el: Element, prop: string, kfs: Kf[]): void {
+  for (let i = 1; i < kfs.length; i++) {
+    tl.fromTo(
+      el,
+      { [prop]: kfs[i - 1][1] },
+      { [prop]: kfs[i][1], duration: kfs[i][0] - kfs[i - 1][0], ease: 'none', immediateRender: i === 1 },
+      kfs[i - 1][0],
+    );
+  }
+}
+
 export function MagicRingShowcase(): React.ReactElement {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const auraRef = useRef<HTMLDivElement>(null);
+  const medallionRef = useRef<HTMLDivElement>(null);
 
-  // Elite scroll-driven progress tracking
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start end', 'center center', 'end start'],
-  });
-
-  // Buttery-smooth spring interpolation (Apple / luxury grade physics)
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 85,
-    damping: 26,
-    restDelta: 0.0005,
-  });
-
-  // Cinematic scroll transforms
-  const scale = useTransform(smoothProgress, [0, 0.5, 0.85, 1], [0.86, 1.0, 1.0, 0.92]);
-  const opacity = useTransform(smoothProgress, [0, 0.3, 0.8, 1], [0.25, 1, 1, 0.35]);
-  const rotateX = useTransform(smoothProgress, [0, 0.5, 1], [15, 0, -8]);
-  const y = useTransform(smoothProgress, [0, 0.5, 1], [50, 0, -35]);
-
-  // Radiating golden aura dynamics
-  const auraScale = useTransform(smoothProgress, [0, 0.5, 1], [0.75, 1.3, 0.85]);
-  const auraOpacity = useTransform(smoothProgress, [0, 0.5, 1], [0.15, 0.65, 0.2]);
-
-  // Medallion independent depth parallax
-  const medallionParallax = useTransform(smoothProgress, [0, 0.5, 1], [25, 0, -20]);
+  // One scrubbed timeline replaces the four framer useScroll/useSpring chains.
+  // start end -> end start matches the old offsets (centre-centre is progress 0.5).
+  useGSAP(
+    () => {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      const card = cardRef.current, aura = auraRef.current, med = medallionRef.current;
+      if (!card || !aura || !med) return;
+      const tl = gsap.timeline({
+        scrollTrigger: { trigger: containerRef.current, start: 'top bottom', end: 'bottom top', scrub: true },
+      });
+      keyframes(tl, card, 'scale', [[0, 0.86], [0.5, 1], [0.85, 1], [1, 0.92]]);
+      keyframes(tl, card, 'opacity', [[0, 0.25], [0.3, 1], [0.8, 1], [1, 0.35]]);
+      keyframes(tl, card, 'rotationX', [[0, 15], [0.5, 0], [1, -8]]);
+      keyframes(tl, card, 'y', [[0, 50], [0.5, 0], [1, -35]]);
+      keyframes(tl, aura, 'scale', [[0, 0.75], [0.5, 1.3], [1, 0.85]]);
+      keyframes(tl, aura, 'opacity', [[0, 0.15], [0.5, 0.65], [1, 0.2]]);
+      keyframes(tl, med, 'y', [[0, 25], [0.5, 0], [1, -20]]);
+    },
+    { scope: containerRef },
+  );
 
   return (
     <section
@@ -41,13 +54,11 @@ export function MagicRingShowcase(): React.ReactElement {
       style={{ perspective: 1200 }}
     >
       {/* ─── SCROLL-ANIMATED MAIN APERTURE CONTAINER ─── */}
-      <motion.div
+      <div
+        ref={cardRef}
         style={{
-          scale,
-          opacity,
-          rotateX,
-          y,
           transformStyle: 'preserve-3d',
+          willChange: 'transform, opacity',
         }}
         className="relative w-full max-w-6xl h-[440px] sm:h-[500px] md:h-[580px] lg:h-[620px] rounded-[2rem] overflow-hidden border border-[#D4AF37]/35 bg-gradient-to-b from-[#0D0E12] via-[#08080A] to-[#040406] shadow-[0_24px_80px_rgba(0,0,0,0.92),0_0_80px_rgba(212,175,55,0.12)] flex items-center justify-center group"
       >
@@ -98,11 +109,13 @@ export function MagicRingShowcase(): React.ReactElement {
         </div>
 
         {/* ─── EXPANDING GOLDEN AURA (Scroll Reactive) ─── */}
-        <motion.div
+        <div
+          ref={auraRef}
           aria-hidden="true"
           style={{
-            scale: auraScale,
-            opacity: auraOpacity,
+            opacity: 0.65,
+            transform: 'scale(1.3)',
+            willChange: 'transform, opacity',
           }}
           className="absolute w-72 h-72 sm:w-96 sm:h-96 md:w-[480px] md:h-[480px] rounded-full pointer-events-none -z-5"
         >
@@ -110,16 +123,15 @@ export function MagicRingShowcase(): React.ReactElement {
             className="w-full h-full rounded-full"
             style={{
               background:
-                'radial-gradient(circle, rgba(212,175,55,0.45) 0%, rgba(212,175,55,0.18) 40%, rgba(212,175,55,0.04) 70%, transparent 85%)',
-              filter: 'blur(45px)',
+                'radial-gradient(circle, rgba(212,175,55,0.45) 0%, rgba(212,175,55,0.22) 30%, rgba(212,175,55,0.08) 55%, rgba(212,175,55,0.02) 75%, transparent 92%)',
             }}
           />
-        </motion.div>
+        </div>
 
         {/* ─── FLOATING CENTER LOGO MEDALLION ─── */}
-        <motion.div
+        <div
+          ref={medallionRef}
           style={{
-            y: medallionParallax,
             transformStyle: 'preserve-3d',
           }}
           className="relative z-20 flex flex-col items-center justify-center pointer-events-none select-none px-4"
@@ -138,7 +150,7 @@ export function MagicRingShowcase(): React.ReactElement {
             className="flex flex-col items-center"
           >
             {/* Medallion Disc */}
-            <div className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 rounded-full p-2 bg-black/75 backdrop-blur-2xl border-2 border-[#D4AF37]/80 shadow-[0_0_60px_rgba(212,175,55,0.5),inset_0_0_30px_rgba(212,175,55,0.35)] flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
+            <div className="relative w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 rounded-full p-2 bg-black/85 border-2 border-[#D4AF37]/80 shadow-[0_0_60px_rgba(212,175,55,0.5),inset_0_0_30px_rgba(212,175,55,0.35)] flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
               {/* Inner Decorative Accent Ring */}
               <div className="absolute inset-1.5 rounded-full border border-[#D4AF37]/30 pointer-events-none" />
 
@@ -171,8 +183,8 @@ export function MagicRingShowcase(): React.ReactElement {
               </div>
             </div>
           </motion.div>
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </section>
   );
 }

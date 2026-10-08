@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { onEveryFrame } from '@/lib/frame-loop';
 
 import './MagicRings.css';
 
@@ -196,13 +197,12 @@ export default function MagicRings({
     mount.addEventListener('mouseleave', onMouseLeave);
     mount.addEventListener('click', onClick);
 
-    let frameId = 0;
+    let unsubscribe = null;
     let isVisible = false;
     let isPageVisible = !document.hidden;
     let elapsed = 0;
     let lastT = 0;
     const animate = (t) => {
-      frameId = requestAnimationFrame(animate);
       const p = propsRef.current;
 
       const dt = lastT === 0 ? 0 : Math.min(t - lastT, 100);
@@ -240,18 +240,16 @@ export default function MagicRings({
 
       renderer.render(scene, camera);
     };
-    frameId = 0;
-
     const tryStart = () => {
-      if (isVisible && isPageVisible && frameId === 0) {
+      if (isVisible && isPageVisible && !unsubscribe) {
         lastT = 0;
-        frameId = requestAnimationFrame(animate);
+        unsubscribe = onEveryFrame(animate, 'render');
       }
     };
     const tryStop = () => {
-      if (frameId !== 0) {
-        cancelAnimationFrame(frameId);
-        frameId = 0;
+      if (unsubscribe) {
+        unsubscribe();
+        unsubscribe = null;
       }
     };
 
