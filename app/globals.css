@@ -550,8 +550,29 @@ html.js .rt-pending {
 @media (prefers-reduced-motion: reduce) { .lg-sheen { display: none; } }
 
 .lg-text { color: inherit; transition: color 0.4s; }
-.lg-link { color: inherit; opacity: 0.88; transition: color 0.2s, opacity 0.2s; }
-.lg-link:hover { color: #d4af37; opacity: 1; }
+.lg-link {
+  position: relative; display: inline-flex; align-items: center; padding: 6px 14px; border-radius: 999px;
+  border: 1px solid rgba(212, 175, 55, .6); color: inherit; overflow: hidden; isolation: isolate;
+  transition: color .35s cubic-bezier(.16, 1, .3, 1), border-color .35s, background-color .35s;
+}
+.lg-link::before { /* metallic fill: a disc growing from the pointer */
+  content: ''; position: absolute; left: var(--fx, 50%); top: var(--fy, 50%); z-index: -1; pointer-events: none;
+  width: 240%; aspect-ratio: 1; margin: -120% 0 0 -120%; border-radius: 50%;
+  background: linear-gradient(135deg, #7d5e17 0%, #c9a13b 22%, #f6e3a1 42%, #d4af37 58%, #fff1c1 70%, #a97f22 88%, #6f5313 100%);
+  transform: scale(0); transition: transform .55s cubic-bezier(.16, 1, .3, 1);
+}
+.lg-link::after { /* sheen pass after the fill */
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, .6) 50%, transparent 70%);
+  transform: translateX(-120%); transition: transform .8s cubic-bezier(.16, 1, .3, 1) .1s;
+}
+.lg-link:hover, .lg-link:focus-visible { color: #1a1408; border-color: rgba(241, 217, 138, .95); }
+.lg-link:hover::before, .lg-link:focus-visible::before { transform: scale(1); }
+.lg-link:hover::after, .lg-link:focus-visible::after { transform: translateX(120%); }
+.lg-link.is-active { border-color: #d4af37; background-color: rgba(212, 175, 55, .16); }
+.lg-pill.lg-dark .lg-link { border-color: rgba(212, 175, 55, .7); }
+.lg-pill.lg-dark .lg-link:hover, .lg-pill.lg-dark .lg-link:focus-visible { color: #1a1408; }
+@media (prefers-reduced-motion: reduce) { .lg-link::before, .lg-link::after { transition: none; } }
 .lg-link:focus-visible,
 .lg-pill a:focus-visible,
 .lg-pill button:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; border-radius: 999px; }
@@ -561,21 +582,6 @@ html.js .rt-pending {
   transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .lg-compact .lg-wordmark { opacity: 0; transform: translateX(-6px); }
-
-.lg-indicator {
-  position: absolute;
-  left: 0;
-  top: 50%;
-  height: 32px;
-  width: 1px;
-  margin-top: -16px;
-  border-radius: 6px;
-  transform-origin: 0 50%;
-  opacity: 0;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(255, 236, 190, 0.35), rgba(212, 175, 55, 0.22));
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
-}
 
 .lg-bar {
   display: block;

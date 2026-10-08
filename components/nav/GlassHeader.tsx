@@ -8,11 +8,10 @@ import React from 'react';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { NAV_LINKS, CTA_PRIMARY } from '@/lib/content';
-import { Button } from '@/components/ui/Button';
+import { NAV_LINKS } from '@/lib/content';
 import { MobileMenuSheet } from './MobileMenuSheet';
 import { LiquidGlassFilter } from './LiquidGlassFilter';
-import { indicatorTransform, stretchKeyframes } from './nav-math';
+import { JoinMenu } from './JoinMenu';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 import { onEveryFrame } from '@/lib/frame-loop';
 import { scrollStore } from '@/lib/scroll-store';
@@ -26,7 +25,6 @@ export function GlassHeader(): React.ReactElement {
   const wrapRef = useRef<HTMLElement>(null);
   const pillRef = useRef<HTMLDivElement>(null);
   const ulRef = useRef<HTMLUListElement>(null);
-  const indicatorRef = useRef<HTMLSpanElement>(null);
   const burgerRef = useRef<HTMLButtonElement>(null);
   const bandRef = useRef<HTMLSpanElement>(null);
 
@@ -50,8 +48,7 @@ export function GlassHeader(): React.ReactElement {
     const wrap = wrapRef.current;
     const pill = pillRef.current;
     const ul = ulRef.current;
-    const indicator = indicatorRef.current;
-    if (!wrap || !pill || !ul || !indicator) return;
+    if (!wrap || !pill || !ul) return;
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const isChromium = (navigator as ChromiumNav).userAgentData?.brands?.some((b) => b.brand === 'Chromium');
@@ -101,38 +98,23 @@ export function GlassHeader(): React.ReactElement {
         }, 'render'),
       );
 
-      // Liquid indicator.
-      const links = Array.from(ul.querySelectorAll<HTMLAnchorElement>('a'));
-      let rects = links.map((a) => indicatorTransform(a.offsetLeft, a.offsetWidth));
+      // Gold chips: active state + metallic fill origin.
+      const links = Array.from(ul.querySelectorAll<HTMLAnchorElement>('a.lg-link'));
       let active = -1;
-      let tl: gsap.core.Timeline | null = null;
-      gsap.set(indicator, { x: 0, scaleX: 1, opacity: 0 });
       const setActive = (i: number): void => {
-        const prev = active;
+        if (active >= 0) { links[active]?.classList.remove('is-active'); links[active]?.removeAttribute('aria-current'); }
         active = i;
-        tl?.kill();
-        if (i < 0) {
-          gsap.to(indicator, { opacity: 0, duration: reduced ? 0 : 0.3 });
-          return;
-        }
-        const to = rects[i];
-        if (reduced || prev < 0) {
-          gsap.set(indicator, { x: to.x, scaleX: to.sx, opacity: 1 });
-          return;
-        }
-        const from = rects[prev];
-        const [k1, k2] = stretchKeyframes(from.x, from.sx, to.x, to.sx);
-        tl = gsap.timeline();
-        tl.to(indicator, { x: k1.x, scaleX: k1.sx, opacity: 1, duration: 0.18, ease: 'power2.in' });
-        tl.to(indicator, { x: k2.x, scaleX: k2.sx, duration: 0.42, ease: 'expo.out' });
+        if (i >= 0) { links[i]?.classList.add('is-active'); links[i]?.setAttribute('aria-current', 'location'); }
       };
-      const measure = (): void => {
-        rects = links.map((a) => indicatorTransform(a.offsetLeft, a.offsetWidth));
-        if (active >= 0) gsap.set(indicator, { x: rects[active].x, scaleX: rects[active].sx });
+      // Metallic fill grows from the pointer entry point and shrinks toward the exit point.
+      const setOrigin = (e: PointerEvent): void => {
+        const a = e.currentTarget as HTMLElement;
+        const r = a.getBoundingClientRect();
+        a.style.setProperty('--fx', `${e.clientX - r.left}px`);
+        a.style.setProperty('--fy', `${e.clientY - r.top}px`);
       };
-      const ro = new ResizeObserver(measure);
-      ro.observe(ul);
-      cleanups.push(() => ro.disconnect());
+      links.forEach((a) => { a.addEventListener('pointerenter', setOrigin); a.addEventListener('pointerleave', setOrigin); });
+      cleanups.push(() => links.forEach((a) => { a.removeEventListener('pointerenter', setOrigin); a.removeEventListener('pointerleave', setOrigin); }));
 
       NAV_LINKS.forEach((link, i) => {
         const section = document.querySelector(link.href);
@@ -234,7 +216,7 @@ export function GlassHeader(): React.ReactElement {
                 />
               </div>
               <span
-                className="lg-wordmark font-display font-bold text-xs sm:text-sm tracking-wider uppercase ml-0.5"
+                className="lg-wordmark md:max-lg:hidden font-display font-bold text-xs sm:text-sm tracking-wider uppercase ml-0.5"
                 style={{ letterSpacing: '0.07em' }}
               >
                 MASTER OF PIPSOLOGY
@@ -242,16 +224,13 @@ export function GlassHeader(): React.ReactElement {
             </a>
 
             {/* Desktop nav links */}
-            <ul ref={ulRef} className="relative hidden md:flex items-center gap-6 lg:gap-8" role="list">
-              <li aria-hidden="true" role="presentation" className="absolute inset-0 pointer-events-none">
-                <span ref={indicatorRef} className="lg-indicator" />
-              </li>
+            <ul ref={ulRef} className="relative hidden md:flex items-center gap-1.5 lg:gap-2.5" role="list">
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
                   <a
                     href={link.href}
                     data-magnetic
-                    className="lg-link relative inline-block text-sm font-body font-medium no-underline"
+                    className="lg-link font-body font-medium no-underline text-sm"
                   >
                     {link.label}
                   </a>
@@ -261,11 +240,7 @@ export function GlassHeader(): React.ReactElement {
 
             {/* Right side — CTA + hamburger */}
             <div className="flex items-center gap-3">
-              <div className="hidden md:block">
-                <Button as="a" href="#cta" size="sm" variant="liquid" data-magnetic>
-                  {CTA_PRIMARY}
-                </Button>
-              </div>
+              <div className="hidden md:block"><JoinMenu /></div>
 
               <button
                 ref={burgerRef}
