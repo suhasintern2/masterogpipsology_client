@@ -196,7 +196,7 @@ export function LuxuryTeamGallery(): React.ReactElement {
           </div>
         ) : (
           /* ─── TRADING FLOOR & MOMENTS MOSAIC GRID ─── */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 pt-2">
             {GALLERY_MOMENTS.map((moment, i) => (
               <motion.div
                 key={moment.id}

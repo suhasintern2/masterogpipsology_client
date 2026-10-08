@@ -9,9 +9,7 @@ import { ThemeScrollWrapper } from '@/components/providers/ThemeScrollWrapper';
 import { GlassHeader } from '@/components/nav/GlassHeader';
 import { Hero } from '@/components/sections/Hero';
 import { CryptoMarketScroll } from '@/components/sections/CryptoMarketScroll';
-import { Marquee } from '@/components/sections/Marquee';
-import { Markets } from '@/components/sections/Markets';
-import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
+import { ForexMarketScroll } from '@/components/sections/ForexMarketScroll';
 import { LuxuryTeamGallery } from '@/components/sections/LuxuryTeamGallery';
 import { Gallery } from '@/components/sections/Gallery';
 import { Curriculum } from '@/components/sections/Curriculum';
@@ -44,17 +42,11 @@ export default function Page(): React.ReactElement {
           {/* 240-frame sticky scroll sequence: "Let me introduce you to the market, first crypto" */}
           <CryptoMarketScroll />
 
-          {/* Marquee — ticker strip between hero and main content */}
-          <Marquee />
-
-          {/* Markets covered — stock, crypto, and forex description */}
-          <Markets />
+          {/* 720-frame sticky scroll sequence: Forex + Stock Market + Opportunity */}
+          <ForexMarketScroll />
 
           {/* ── PERSISTENT LUXURY BLACK EFFECT (Stays black all the way to page end) ── */}
           <div className="theme-black-section relative w-full bg-[#08080A] text-[#F5EFEB]">
-            {/* The Intelligence Layer Motion UI — AI Infrastructure Hero */}
-            <IntelligenceHero />
-
             {/* Luxury animated team movement gallery & moments */}
             <LuxuryTeamGallery />
 

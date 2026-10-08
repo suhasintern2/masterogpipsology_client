@@ -18,16 +18,15 @@ import Image from 'next/image';
 import { motion, useInView, useScroll, useTransform, useSpring } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { StatRow } from '@/components/ui/StatRow';
+import { TypingHeading } from '@/components/ui/TypingHeading';
 import {
   COHORT_BADGE,
-  HERO_HEADLINE_LINES,
   HERO_SUBLINE,
   HERO_STATS,
   CTA_PRIMARY,
   CTA_SECONDARY,
 } from '@/lib/content';
 import {
-  maskRevealVariants,
   fadeUpVariants,
   brassRuleVariants,
   SPRING_RESPONSIVE,
@@ -275,19 +274,7 @@ export function Hero(): React.ReactElement {
               textShadow: '0 2px 28px rgba(0,0,0,0.35)',
             }}
           >
-            {HERO_HEADLINE_LINES.map((line, i) => (
-              <span key={i} className="block overflow-hidden">
-                <motion.span
-                  className={`block ${i === 2 ? 'italic' : ''}`}
-                  custom={i}
-                  variants={maskRevealVariants}
-                  initial="hidden"
-                  animate={inView ? 'visible' : 'hidden'}
-                >
-                  {line}
-                </motion.span>
-              </span>
-            ))}
+            <TypingHeading text="Education before execution" />
           </h1>
 
           {/* Brass rule */}
