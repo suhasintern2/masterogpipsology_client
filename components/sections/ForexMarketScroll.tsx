@@ -307,24 +307,6 @@ export function ForexMarketScroll(): React.ReactElement {
           className="relative z-30 w-full h-full max-w-7xl mx-auto px-5 sm:px-8 md:px-12 lg:px-16 flex flex-col justify-between py-10 md:py-14 pointer-events-none"
           style={{ willChange: 'opacity' }}
         >
-          {/* Top Bar */}
-          <div className="flex items-center justify-between">
-            <div className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full border border-[#D4AF37]/35 bg-[#FAF6ED]/92 shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-[#D4AF37] motion-safe:animate-pulse" />
-              <span ref={hudLabelRef} className="text-[11px] md:text-xs font-mono tracking-widest uppercase text-[#8C6D23] font-semibold">
-                Asset Class 02 &bull; Foreign Exchange
-              </span>
-            </div>
-            <div className="flex items-center gap-3 px-4 py-1.5 rounded-full border border-black/10 bg-[#FAF6ED]/92 shadow-xs">
-              <span className="text-[11px] font-mono text-[#7A756D]">FRAME</span>
-              <span ref={hudFrameRef} className="text-xs font-mono font-bold text-[#0E0F14] min-w-[28px] text-right">001</span>
-              <span className="text-[10px] font-mono text-[#B0AAA0]">/</span>
-              <span ref={hudTotalRef} className="text-[10px] font-mono text-[#B0AAA0]">240</span>
-              <div className="w-16 h-1.5 bg-black/10 rounded-full overflow-hidden ml-1">
-                <div ref={hudProgressRef} className="h-full bg-[#D4AF37] rounded-full" style={{ width: '100%', transform: 'scaleX(0)', transformOrigin: '0 50%', transition: 'none' }} />
-              </div>
-            </div>
-          </div>
 
           {/* Overlay panels – stacked in a single grid cell to prevent layout shift */}
           <div className="grid grid-cols-1 justify-items-end text-right max-w-xl self-end">
@@ -415,14 +397,6 @@ export function ForexMarketScroll(): React.ReactElement {
 
           </div>
 
-          {/* Bottom hint */}
-          <div className="flex items-end justify-between pt-4 border-t border-black/10">
-            <div className="text-xs font-mono text-[#7A756D] tracking-wide">MOP &bull; 1920&times;1080 3D SEQUENCE</div>
-            <div className="flex items-center gap-2 text-xs font-mono text-[#8C6D23] font-medium">
-              <span className="inline-block motion-safe:animate-bounce">↓</span>
-              <span>SCROLL TO ADVANCE FRAMES</span>
-            </div>
-          </div>
         </div>
       </div>
     </section>

@@ -104,7 +104,7 @@ export function MagicRingShowcase(): React.ReactElement {
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-black/60 border border-[#D4AF37]/30 backdrop-blur-md">
             <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] animate-pulse" />
             <span className="font-mono text-[10px] md:text-[11px] tracking-[0.25em] text-[#D4AF37] uppercase font-semibold">
-              RING OF PRECISION · LIVE WEBGL
+              
             </span>
           </div>
         </div>
@@ -197,9 +197,6 @@ export function MagicRingShowcase(): React.ReactElement {
               </span>
               <div className="mt-3 flex items-center justify-center gap-3 opacity-75">
                 <span className="h-[1px] w-8 bg-[#D4AF37]/50" />
-                <span className="text-[10px] sm:text-[11px] font-body tracking-[0.18em] text-[#E0D8D0] uppercase">
-                  Institutional Market Craft
-                </span>
                 <span className="h-[1px] w-8 bg-[#D4AF37]/50" />
               </div>
             </div>
