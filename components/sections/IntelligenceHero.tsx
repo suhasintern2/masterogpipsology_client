@@ -208,6 +208,27 @@ export function IntelligenceHero({
         </>
       )}
 
+      {embedded ? (
+        <div className={styles.statement}>
+          <motion.p
+            className={styles.stmtLine}
+            initial={{ opacity: 0, y: 18 }}
+            animate={show ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+            transition={{ duration: 0.9, delay: 0.06, ease: EASING }}
+          >
+            Be a man.
+          </motion.p>
+          <motion.p
+            className={`${styles.stmtLine} ${styles.stmtGold}`}
+            initial={{ opacity: 0, y: 18 }}
+            animate={show ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
+            transition={{ duration: 0.9, delay: 0.2, ease: EASING }}
+          >
+            Take that goddamn risk.
+          </motion.p>
+        </div>
+      ) : (
+        <>
       {/* ── Hero Main Content ──────────────────────────────────────────────── */}
       <main className={styles.hero}>
         <motion.h1
@@ -325,6 +346,8 @@ export function IntelligenceHero({
           <span className={styles.word}>logoipsum</span>
         </div>
       </motion.div>
+        </>
+      )}
     </section>
   );
 }

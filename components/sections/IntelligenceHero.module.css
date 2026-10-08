@@ -783,3 +783,22 @@
 @media (min-width: 600px) and (max-aspect-ratio: 11/10) {
   .embedded .hero { margin-top: calc(166 * var(--m)); }   /* 76m + 90m */
 }
+
+/* Embedded statement: "Be a man. / Take that goddamn risk." */
+.statement {
+  position: absolute; inset: 0; z-index: 10;
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-start;
+  padding: 0 clamp(24px, 6vw, 96px);
+  pointer-events: none;
+}
+.stmtLine {
+  margin: 0;
+  font-family: var(--font-display), 'Cormorant Garamond', Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(2.75rem, 8.5vw, 8rem);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  color: #fafafa;
+  text-shadow: 0 2px 28px rgba(0, 0, 0, 0.45);
+}
+.stmtGold { font-style: italic; color: #D9B866; }
