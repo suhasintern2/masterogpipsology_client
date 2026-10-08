@@ -23,6 +23,7 @@ import { Preloader } from '@/components/fx/Preloader';
 import { PaletteBackdrop } from '@/components/fx/PaletteBackdrop';
 import { Grain } from '@/components/fx/Grain';
 import { SectionSeam } from '@/components/fx/SectionSeam';
+import { FogTransition } from '@/components/fx/FogTransition';
 
 export default function Page(): React.ReactElement {
   return (
@@ -52,6 +53,7 @@ export default function Page(): React.ReactElement {
 
           {/* 240-frame sticky scroll sequence: "Let me introduce you to the market, first crypto" */}
           <CryptoMarketScroll />
+          <FogTransition />
 
           {/* 720-frame sticky scroll sequence: Forex + Stock Market + Opportunity */}
           <ForexMarketScroll />

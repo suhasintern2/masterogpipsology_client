@@ -898,3 +898,22 @@ html.js .th-c.is-on, html.js .th--static .th-c { opacity: 1; animation: none; }
 .seam--static .seam__line { transform: none; }
 .seam--static .seam__mark { transform: rotate(45deg); }
 .seam--static .seam__bloom { opacity: .35; transform: none; }
+
+/* ─── Fog fade (Crypto -> Forex) ─── */
+.fog { position: relative; z-index: 5; height: 0; pointer-events: none; }
+.fog__band { position: absolute; left: 0; right: 0; top: -100vh; height: 200vh; overflow: hidden; contain: layout paint; }
+.fog__veil, .fog__mist { position: absolute; inset: 0; opacity: 0; will-change: opacity; }
+.fog__veil {
+  background: linear-gradient(180deg, rgba(239, 231, 220, 0) 0%, rgba(239, 231, 220, .8) 30%, #EFE7DC 44%, #EFE7DC 56%, rgba(239, 231, 220, .8) 70%, rgba(239, 231, 220, 0) 100%);
+}
+.fog__mist { left: -30%; right: -30%; will-change: transform, opacity; }
+.fog__mist--a {
+  background:
+    radial-gradient(ellipse 38% 16% at 30% 42%, rgba(226, 208, 176, .75), transparent 70%),
+    radial-gradient(ellipse 30% 14% at 72% 58%, rgba(236, 224, 202, .8), transparent 70%);
+}
+.fog__mist--b {
+  background:
+    radial-gradient(ellipse 34% 15% at 62% 40%, rgba(232, 216, 186, .7), transparent 70%),
+    radial-gradient(ellipse 36% 13% at 24% 60%, rgba(222, 202, 168, .7), transparent 70%);
+}
