@@ -199,6 +199,7 @@ export function ForexMarketScroll(): React.ReactElement {
     <section
       ref={sectionRef}
       id="forex-sequence"
+      data-nav-tone="dark"
       aria-label="Forex, Stock Market and Opportunity Interactive Scroll Sequence"
       className="relative w-full z-20"
       style={{

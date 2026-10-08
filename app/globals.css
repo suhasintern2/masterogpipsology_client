@@ -463,3 +463,143 @@ html.js .rt-pending {
   pointer-events: none;
   white-space: nowrap;
 }
+
+/* ─── Liquid glass navbar (.lg-*) ─────────────────────────────────────────── */
+.lg-wrap {
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lg-wrap.lg-hidden { transform: translateY(calc(-100% - 20px)); }
+
+.lg-pill {
+  position: relative;
+  width: 100%;
+  max-width: min(1080px, calc(100% - 24px));
+  border-radius: 999px;
+  transform-origin: 50% 0;
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #1c1917;
+}
+.lg-pill.lg-dark { color: #faf6f0; }
+.lg-pill.lg-compact { transform: scale(0.94); }
+
+/* The single backdrop-filter layer */
+.lg-pill::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  backdrop-filter: blur(14px) saturate(180%);
+  background: linear-gradient(180deg, rgba(255, 250, 240, 0.16), rgba(20, 18, 14, 0.28));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 0 24px rgba(212, 175, 55, 0.1),
+    0 10px 40px rgba(0, 0, 0, 0.25);
+}
+.lg-pill.lg-refract::before {
+  backdrop-filter: url(#lg-refract) blur(10px) saturate(180%);
+}
+/* Gold specular edge */
+.lg-pill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(255, 236, 190, 0.9), rgba(212, 175, 55, 0.35) 30%, transparent 55%, rgba(212, 175, 55, 0.5) 85%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+}
+.lg-content { position: relative; z-index: 1; }
+
+.lg-text { color: inherit; transition: color 0.4s; }
+.lg-link { color: inherit; opacity: 0.88; transition: color 0.2s, opacity 0.2s; }
+.lg-link:hover { color: #d4af37; opacity: 1; }
+.lg-link:focus-visible,
+.lg-pill a:focus-visible,
+.lg-pill button:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; border-radius: 999px; }
+
+.lg-wordmark {
+  display: inline-block;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lg-compact .lg-wordmark { opacity: 0; transform: translateX(-6px); }
+
+.lg-indicator {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 32px;
+  width: 1px;
+  margin-top: -16px;
+  border-radius: 6px;
+  transform-origin: 0 50%;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 236, 190, 0.35), rgba(212, 175, 55, 0.22));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.lg-bar {
+  display: block;
+  width: 20px;
+  height: 2px;
+  border-radius: 999px;
+  background: currentColor;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lg-burger[aria-expanded='true'] .lg-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.lg-burger[aria-expanded='true'] .lg-bar:nth-child(2) { transform: scaleX(0); }
+.lg-burger[aria-expanded='true'] .lg-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* Liquid fill button */
+.btn-liquid {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  color: #e8c766;
+  background: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.55);
+}
+.btn-liquid:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }
+.btn-liquid__fill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: -8px;
+  z-index: -1;
+  background: linear-gradient(135deg, #f1d98a, #d4af37 55%, #b8932a);
+  transform: translateY(102%);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='8' viewBox='0 0 40 8'%3E%3Cpath d='M0 8V4Q10 0 20 4T40 4V8Z'/%3E%3C/svg%3E") repeat-x 0 0 / 40px 8px,
+    linear-gradient(#000, #000) 0 7px / 100% 100% no-repeat;
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='8' viewBox='0 0 40 8'%3E%3Cpath d='M0 8V4Q10 0 20 4T40 4V8Z'/%3E%3C/svg%3E") repeat-x 0 0 / 40px 8px,
+    linear-gradient(#000, #000) 0 7px / 100% 100% no-repeat;
+}
+.btn-liquid__label { position: relative; transition: opacity 0.3s; }
+.btn-liquid__label--ink {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1a1408;
+  opacity: 0;
+}
+.btn-liquid:hover .btn-liquid__fill,
+.btn-liquid:focus-visible .btn-liquid__fill { transform: translateY(0); }
+.btn-liquid:hover .btn-liquid__label:not(.btn-liquid__label--ink),
+.btn-liquid:focus-visible .btn-liquid__label:not(.btn-liquid__label--ink) { opacity: 0; }
+.btn-liquid:hover .btn-liquid__label--ink,
+.btn-liquid:focus-visible .btn-liquid__label--ink { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lg-wrap, .lg-pill, .lg-text, .lg-link, .lg-wordmark, .lg-bar,
+  .btn-liquid__fill, .btn-liquid__label { transition: none !important; }
+}

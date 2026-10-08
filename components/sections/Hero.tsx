@@ -138,7 +138,7 @@ export function Hero(): React.ReactElement {
             animate={inView ? 'visible' : 'hidden'}
             className="flex flex-wrap items-center gap-3 pt-1"
           >
-            <Button as="a" href="#cta" size="lg" variant="filled" id="hero-cta-primary">
+            <Button as="a" href="#cta" size="lg" variant="liquid" id="hero-cta-primary">
               {CTA_PRIMARY}
             </Button>
             <Button as="a" href="#curriculum" size="lg" variant="outline" id="hero-cta-secondary">

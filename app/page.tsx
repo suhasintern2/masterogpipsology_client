@@ -48,7 +48,7 @@ export default function Page(): React.ReactElement {
           <ForexMarketScroll />
 
           {/* ── PERSISTENT LUXURY BLACK EFFECT (Stays black all the way to page end) ── */}
-          <div className="theme-black-section relative w-full bg-[#08080A] text-[#F5EFEB]">
+          <div data-nav-tone="dark" className="theme-black-section relative w-full bg-[#08080A] text-[#F5EFEB]">
             {/* Luxury animated team movement gallery & moments */}
             <LuxuryTeamGallery />
 
