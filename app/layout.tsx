@@ -1,27 +1,21 @@
 import type { Metadata } from 'next';
-import { Fraunces, Manrope, Geist } from 'next/font/google';
+import { Cormorant_Garamond, Manrope } from 'next/font/google';
 import './globals.css';
 import { LenisProvider } from '@/components/providers/LenisProvider';
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
-
-
 // ─── Fonts ────────────────────────────────────────────────────────────────────
 
-const fraunces = Fraunces({
+const display = Cormorant_Garamond({
   subsets: ['latin'],
-  axes: ['opsz', 'SOFT', 'WONK'],
-  // Variable font: don't specify weight when using axes
   style: ['normal', 'italic'],
-  variable: '--font-fraunces',
+  variable: '--font-display-serif',
   display: 'swap',
 });
 
-const manrope = Manrope({
+const sans = Manrope({
   subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-manrope',
+  variable: '--font-sans-body',
   display: 'swap',
 });
 
@@ -94,9 +88,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(fraunces.variable, manrope.variable, "font-sans", geist.variable)}
+      className={cn(display.variable, sans.variable)}
       suppressHydrationWarning
     >
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: "document.documentElement.classList.add('js')" }} />
+      </head>
       <body>
         <LenisProvider>
           {children}

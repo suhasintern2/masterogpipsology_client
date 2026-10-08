@@ -58,7 +58,7 @@ export function Footer(): React.ReactElement {
           {FOOTER_COLUMNS.map((col) => (
             <div key={col.heading}>
               <h3
-                className="text-xs font-body font-medium uppercase tracking-widest mb-4"
+                className="label-caps mb-4"
                 style={{ color: 'var(--accent)' }}
               >
                 {col.heading}

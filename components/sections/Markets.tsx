@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MARKETS } from '@/lib/content';
 import { Hairline } from '@/components/ui/Hairline';
 import { fadeUpVariants } from '@/lib/motion';
+import { FillStatement } from '@/components/motion/FillStatement';
 
 export function Markets(): React.ReactElement {
   return (
@@ -22,7 +23,7 @@ export function Markets(): React.ReactElement {
       {/* Section label */}
       <div className="flex items-center gap-3 mb-4">
         <span
-          className="text-xs font-body font-medium uppercase tracking-widest"
+          className="label-caps"
           style={{ color: 'var(--accent)' }}
         >
           Markets covered
@@ -30,13 +31,14 @@ export function Markets(): React.ReactElement {
         <div className="flex-1 h-px" style={{ backgroundColor: 'var(--hairline)' }} aria-hidden="true" />
       </div>
 
-      <h2
+      <FillStatement
+        as="h2"
         id="markets-heading"
-        className="display font-medium leading-tight tracking-tight mb-12 md:mb-16"
-        style={{ fontSize: 'clamp(1.8rem, 3.5vw, 3.2rem)', color: 'var(--text)' }}
+        className="display mb-12 md:mb-16"
+        style={{ fontSize: 'var(--fs-h2)', color: 'var(--text)' }}
       >
-        Three markets.<br />One framework.
-      </h2>
+        {'Three markets.\nOne framework.'}
+      </FillStatement>
 
       {/* Market list */}
       <div>

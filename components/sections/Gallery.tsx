@@ -14,6 +14,7 @@ import { motion, useSpring } from 'framer-motion';
 import { ResultsWall } from '@/components/art/ResultsWall';
 import { CertificateDisplay } from '@/components/art/CertificateDisplay';
 import { SPRING_SLOW } from '@/lib/motion';
+import { RevealText } from '@/components/motion/RevealText';
 
 export function Gallery(): React.ReactElement {
   return (
@@ -25,7 +26,7 @@ export function Gallery(): React.ReactElement {
       {/* Section label */}
       <div className="flex items-center gap-3 mb-4">
         <span
-          className="text-xs font-body font-medium uppercase tracking-widest"
+          className="label-caps"
           style={{ color: 'var(--accent)' }}
         >
           Results
@@ -33,13 +34,16 @@ export function Gallery(): React.ReactElement {
         <div className="flex-1 h-px" style={{ backgroundColor: 'var(--hairline)' }} aria-hidden="true" />
       </div>
 
-      <h2
+      <RevealText
+        as="h2"
+        mode="lines"
+        trigger="scroll"
         id="gallery-heading"
-        className="display font-medium leading-tight tracking-tight mb-12 md:mb-16"
-        style={{ fontSize: 'clamp(1.8rem, 3.5vw, 3.2rem)', color: 'var(--text)' }}
+        className="display mb-12 md:mb-16"
+        style={{ fontSize: 'var(--fs-h2)', color: 'var(--text)' }}
       >
         Real results from<br />real traders.
-      </h2>
+      </RevealText>
 
       {/* Gallery frames */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">

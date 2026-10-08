@@ -4,6 +4,7 @@ import React from 'react';
 // with attribution. Server Component.
 
 import { TESTIMONIAL } from '@/lib/content';
+import { RevealText } from '@/components/motion/RevealText';
 
 export function Testimonial(): React.ReactElement {
   return (
@@ -41,13 +42,16 @@ export function Testimonial(): React.ReactElement {
 
         <figure className="relative z-10">
           <blockquote>
-            <h2
+            <RevealText
+              as="h2"
+              mode="lines"
+              trigger="scroll"
               id="testimonial-heading"
-              className="display font-medium italic leading-snug tracking-tight mb-8"
-              style={{ fontSize: 'clamp(1.4rem, 2.8vw, 2.2rem)', color: 'var(--text)' }}
+              className="display italic mb-8"
+              style={{ fontSize: 'var(--fs-h3)', lineHeight: 1.25, color: 'var(--text)' }}
             >
               &ldquo;{TESTIMONIAL.quote}&rdquo;
-            </h2>
+            </RevealText>
           </blockquote>
 
           <figcaption className="flex items-center gap-4">

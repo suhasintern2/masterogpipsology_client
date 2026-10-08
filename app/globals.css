@@ -22,8 +22,8 @@
   --color-accent-bright: var(--accent-bright);
 
   /* Typography */
-  --font-display: var(--font-fraunces), Georgia, serif;
-  --font-body:    var(--font-manrope), system-ui, sans-serif;
+  --font-display: var(--font-display-serif), 'Cormorant Garamond', Georgia, serif;
+  --font-body:    var(--font-sans-body), system-ui, sans-serif;
 
   /* Type scale — minor third (1.25) */
   --text-xs:   0.64rem;
@@ -42,8 +42,8 @@
   --spacing-22: 5.5rem;
   --spacing-26: 6.5rem;
   --spacing-30: 7.5rem;
-  --font-heading:          var(--font-sans);
-  --font-sans:          var(--font-sans);
+  --font-heading:          var(--font-display);
+  --font-sans:          var(--font-body);
   --color-sidebar-ring:          var(--sidebar-ring);
   --color-sidebar-border:          var(--sidebar-border);
   --color-sidebar-accent-foreground:          var(--sidebar-accent-foreground);
@@ -314,8 +314,17 @@ body {
 /* ─── Typography helpers ──────────────────────────────────────────────────────── */
 .display {
   font-family: var(--font-display);
-  letter-spacing: -0.03em;
-  font-optical-sizing: auto;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.02;
+}
+
+.label-caps {
+  font-family: var(--font-body);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  font-size: var(--fs-label);
 }
 
 .body-max {
@@ -393,4 +402,64 @@ body {
   html {
     @apply font-sans;
   }
+}
+/* ─── Fluid type scale ───────────────────────────────────────────────────────── */
+:root {
+  --fs-hero: clamp(2.75rem, 1.2rem + 6.2vw, 6.5rem);
+  --fs-h2: clamp(2rem, 1.1rem + 3.6vw, 4.25rem);
+  --fs-h3: clamp(1.35rem, 1rem + 1.2vw, 2rem);
+  --fs-body: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --fs-label: clamp(0.6875rem, 0.66rem + 0.1vw, 0.75rem);
+}
+
+/* ─── Text reveals (opacity/transform only) ──────────────────────────────────── */
+@keyframes rt-failsafe { to { opacity: 1; } }
+html.js .rt-pending {
+  opacity: 0;
+  animation: rt-failsafe 0s 3.5s forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  html.js .rt-pending { opacity: 1; animation: none; }
+}
+.rt-line { will-change: transform; }
+
+.gold-shimmer {
+  position: relative;
+  display: inline-block;
+  background: linear-gradient(100deg, #B38728, #E8CA65 45%, #B38728);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.gold-shimmer .gs-l,
+.gold-shimmer .gs-c,
+.gold-shimmer .gs-r {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+.gold-shimmer .gs-l { background-image: linear-gradient(100deg, transparent 8%, rgba(255,250,230,0.95) 20%, transparent 32%); }
+.gold-shimmer .gs-c { background-image: linear-gradient(100deg, transparent 38%, rgba(255,250,230,0.95) 50%, transparent 62%); }
+.gold-shimmer .gs-r { background-image: linear-gradient(100deg, transparent 68%, rgba(255,250,230,0.95) 80%, transparent 92%); }
+
+.gold-shimmer .gs-l::before,
+.gold-shimmer .gs-c::before,
+.gold-shimmer .gs-r::before { content: attr(data-text); white-space: nowrap; }
+
+.fill-statement .fs-word { position: relative; display: inline-block; color: rgba(239, 231, 220, 0.28); }
+.fill-statement--light .fs-word { color: rgba(14, 15, 20, 0.25); }
+.fill-statement .fs-gold {
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: #D4AF37;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
 }

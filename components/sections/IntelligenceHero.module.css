@@ -22,7 +22,7 @@
   overflow: hidden;
   background-color: var(--bg);
   color: var(--ink);
-  font-family: var(--font-manrope), 'Manrope', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body), 'Manrope', system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: geometricPrecision;
@@ -296,7 +296,7 @@
 
 .lg .word {
   position: absolute;
-  font-family: 'IpsumMark', var(--font-manrope), 'Manrope', system-ui, sans-serif;
+  font-family: 'IpsumMark', var(--font-body), 'Manrope', system-ui, sans-serif;
   font-weight: 700;
   line-height: 1;
   color: inherit;

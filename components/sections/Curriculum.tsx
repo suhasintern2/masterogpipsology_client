@@ -6,6 +6,7 @@ import React from 'react';
 
 import { CURRICULUM_CHAPTERS, CURRICULUM_INTRO } from '@/lib/content';
 import { Hairline } from '@/components/ui/Hairline';
+import { FillStatement } from '@/components/motion/FillStatement';
 
 export function Curriculum(): React.ReactElement {
   return (
@@ -17,7 +18,7 @@ export function Curriculum(): React.ReactElement {
       {/* Section label */}
       <div className="flex items-center gap-3 mb-4">
         <span
-          className="text-xs font-body font-medium uppercase tracking-widest"
+          className="label-caps"
           style={{ color: 'var(--accent)' }}
         >
           The programme
@@ -26,13 +27,14 @@ export function Curriculum(): React.ReactElement {
       </div>
 
       <div className="flex flex-col md:flex-row md:gap-16 mb-12 md:mb-16">
-        <h2
+        <FillStatement
+          as="h2"
           id="curriculum-heading"
-          className="display font-medium leading-tight tracking-tight md:w-1/2"
-          style={{ fontSize: 'clamp(1.8rem, 3.5vw, 3.2rem)', color: 'var(--text)' }}
+          className="display md:w-1/2"
+          style={{ fontSize: 'var(--fs-h2)', color: 'var(--text)' }}
         >
-          Twelve weeks.<br />Six modules.<br />One system.
-        </h2>
+          {'Twelve weeks.\nSix modules.\nOne system.'}
+        </FillStatement>
 
         <p
           className="md:w-1/2 mt-4 md:mt-0 text-base leading-relaxed font-body self-end body-max"

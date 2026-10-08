@@ -9,6 +9,7 @@ import {
   useTransform,
 } from 'framer-motion';
 import { TEAM_MEMBERS, GALLERY_MOMENTS, type TeamMember } from '@/lib/content';
+import { RevealText } from '@/components/motion/RevealText';
 
 export function LuxuryTeamGallery(): React.ReactElement {
   const [activeTab, setActiveTab] = useState<'faculty' | 'moments'>('faculty');
@@ -76,19 +77,18 @@ export function LuxuryTeamGallery(): React.ReactElement {
             The Institutional Faculty
           </motion.div>
 
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.3 }}
-            transition={{ duration: 0.7, delay: 0.1 }}
-            className="display font-medium leading-[1.08] tracking-tight max-w-3xl mb-4"
-            style={{ fontSize: 'clamp(2.4rem, 5vw, 4.2rem)', color: '#FAF6F0' }}
+          <RevealText
+            as="h2"
+            mode="lines"
+            trigger="scroll"
+            className="display max-w-3xl mb-4"
+            style={{ fontSize: 'var(--fs-h2)', color: '#FAF6F0' }}
           >
             Architects of the framework.<br />
             <span className="italic bg-gradient-to-r from-[#F5E5C9] via-[#E2BE68] to-[#FAF1DE] bg-clip-text text-transparent">
               Mentors in live execution.
             </span>
-          </motion.h2>
+          </RevealText>
 
           <motion.p
             initial={{ opacity: 0, y: 15 }}

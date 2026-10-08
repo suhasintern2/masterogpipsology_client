@@ -2,6 +2,7 @@
 
 import React, { useRef, useCallback } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
+import { RevealText } from '@/components/motion/RevealText';
 
 // ── Tunable constants ────────────────────────────────────────────────────────
 const TOTAL_FRAMES = 240;
@@ -100,14 +101,14 @@ export function CryptoMarketScroll(): React.ReactElement {
               <span>The Inaugural Asset Class</span>
               <span className="w-6 h-px bg-[#D4AF37]" />
             </div>
-            <h2
+            <RevealText as="h2" mode="lines" trigger="scroll"
               className="font-display font-medium leading-[1.08] tracking-tight text-[#0E0F14] text-3xl sm:text-4xl md:text-5xl lg:text-[3.6rem]"
-              style={{ fontFamily: 'var(--font-fraunces), Georgia, serif', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
+              style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-h2)', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
             >
               Let me introduce you <br className="hidden sm:inline" />
               to the market, <br />
               <span className="italic font-normal text-[#B38728]">first crypto.</span>
-            </h2>
+            </RevealText>
             <p className="mt-4 md:mt-6 text-sm md:text-base font-body text-[#524C42] leading-relaxed max-w-md">
               Where 24/7 algorithmic volatility, perpetual order flow, and global liquidity pools converge. The foundation every modern institutional trader masters.
             </p>

@@ -3,6 +3,7 @@
 import React, { useRef } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
 import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
+import { RevealText } from '@/components/motion/RevealText';
 
 // ── Tunable constants ────────────────────────────────────────────────────────
 const FOREX_FRAMES       = 240;
@@ -280,14 +281,14 @@ export function ForexMarketScroll(): React.ReactElement {
                 <span>The Global Reserve Market</span>
                 <span className="w-6 h-px bg-[#D4AF37]" />
               </div>
-              <h2
+              <RevealText as="h2" mode="lines" trigger="scroll"
                 className="font-display font-medium leading-[1.08] tracking-tight text-[#0E0F14] text-3xl sm:text-4xl md:text-5xl lg:text-[3.6rem]"
-                style={{ fontFamily: 'var(--font-fraunces), Georgia, serif', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
+                style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-h2)', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
               >
                 And now, <br className="hidden sm:inline" />
                 the global reserve, <br />
                 <span className="italic font-normal text-[#B38728]">pure forex.</span>
-              </h2>
+              </RevealText>
               <p className="mt-4 md:mt-6 text-sm md:text-base font-body text-[#524C42] leading-relaxed max-w-md">
                 The foreign exchange market moves $7.5 trillion a day. Where central banks, sovereign wealth funds, and interbank algorithms dictate institutional order flow.
               </p>
@@ -308,14 +309,14 @@ export function ForexMarketScroll(): React.ReactElement {
                 <span>The Equity Arena</span>
                 <span className="w-6 h-px bg-[#D4AF37]" />
               </div>
-              <h2
+              <RevealText as="h2" mode="lines" trigger="scroll"
                 className="font-display font-medium leading-[1.08] tracking-tight text-[#0E0F14] text-3xl sm:text-4xl md:text-5xl lg:text-[3.6rem]"
-                style={{ fontFamily: 'var(--font-fraunces), Georgia, serif', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
+                style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-h2)', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
               >
                 And then, <br className="hidden sm:inline" />
                 the market floor, <br />
                 <span className="italic font-normal text-[#B38728]">pure stocks.</span>
-              </h2>
+              </RevealText>
               <p className="mt-4 md:mt-6 text-sm md:text-base font-body text-[#524C42] leading-relaxed max-w-md">
                 Equities, indices, and the bull&ndash;bear cycle. Where institutional block orders, earnings catalysts, and central bank policy converge into price action.
               </p>
@@ -336,14 +337,14 @@ export function ForexMarketScroll(): React.ReactElement {
                 <span>Where It All Converges</span>
                 <span className="w-6 h-px bg-[#D4AF37]" />
               </div>
-              <h2
+              <RevealText as="h2" mode="lines" trigger="scroll"
                 className="font-display font-medium leading-[1.08] tracking-tight text-[#0E0F14] text-3xl sm:text-4xl md:text-5xl lg:text-[3.6rem]"
-                style={{ fontFamily: 'var(--font-fraunces), Georgia, serif', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
+                style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-h2)', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
               >
                 This is <br className="hidden sm:inline" />
                 your moment, <br />
                 <span className="italic font-normal text-[#B38728]">the opportunity.</span>
-              </h2>
+              </RevealText>
               <p className="mt-4 md:mt-6 text-sm md:text-base font-body text-[#524C42] leading-relaxed max-w-md">
                 Every market. Every asset class. Every edge. The complete picture of how institutional capital moves — and how you position yourself inside it.
               </p>

@@ -4,8 +4,10 @@ import React from 'react';
 // Sits at the darkest point of the scroll transition (~100%).
 // Server Component.
 
-import { FINAL_CTA_HEADLINE, CTA_PRIMARY, CTA_SECONDARY } from '@/lib/content';
+import { CTA_PRIMARY, CTA_SECONDARY } from '@/lib/content';
 import { Button } from '@/components/ui/Button';
+import { RevealText } from '@/components/motion/RevealText';
+import { GoldShimmer } from '@/components/motion/GoldShimmer';
 
 export function FinalCta(): React.ReactElement {
   return (
@@ -33,13 +35,16 @@ export function FinalCta(): React.ReactElement {
             className="brass-rule w-16"
           />
 
-          <h2
+          <RevealText
+            as="h2"
+            mode="lines"
+            trigger="scroll"
             id="cta-heading"
-            className="display font-medium leading-tight tracking-tight"
-            style={{ fontSize: 'clamp(2rem, 4.5vw, 4rem)', color: 'var(--text)' }}
+            className="display"
+            style={{ fontSize: 'var(--fs-h2)', color: 'var(--text)' }}
           >
-            {FINAL_CTA_HEADLINE}
-          </h2>
+            Education before <GoldShimmer>execution.</GoldShimmer>
+          </RevealText>
 
           <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
             <Button

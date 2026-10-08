@@ -18,7 +18,8 @@ import Image from 'next/image';
 import { motion, useInView } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { HeroLightLayers } from '@/components/sections/hero/HeroLightLayers';
-import { TypingHeading } from '@/components/ui/TypingHeading';
+import { RevealText } from '@/components/motion/RevealText';
+import { GoldShimmer } from '@/components/motion/GoldShimmer';
 import {
   HERO_SUBLINE,
   CTA_PRIMARY,
@@ -91,16 +92,19 @@ export function Hero(): React.ReactElement {
           </motion.div>
 
           {/* Headline */}
-          <h1
-            className="display font-medium leading-[1.05] tracking-tight"
+          <RevealText
+            as="h1"
+            mode="chars"
+            trigger="intro"
+            className="display"
             style={{
-              fontSize: 'clamp(2.2rem, 6vw, 5rem)',
+              fontSize: 'var(--fs-hero)',
               color: '#F3ECE0',
               textShadow: '0 2px 28px rgba(0,0,0,0.35)',
             }}
           >
-            <TypingHeading text="Education before execution" />
-          </h1>
+            Education before <GoldShimmer>execution</GoldShimmer>
+          </RevealText>
 
           {/* Brass rule */}
           <motion.div

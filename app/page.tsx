@@ -16,11 +16,13 @@ import { Testimonial } from '@/components/sections/Testimonial';
 import { MagicRingShowcase } from '@/components/art/MagicRingShowcase';
 import { FinalCta } from '@/components/sections/FinalCta';
 import { Footer } from '@/components/sections/Footer';
+import { IntroAutoStart } from '@/components/motion/IntroAutoStart';
 
 export default function Page(): React.ReactElement {
   return (
     <>
       <LongTaskProbe />
+      <IntroAutoStart />
       {/* Fixed navigation */}
       <GlassHeader />
 
