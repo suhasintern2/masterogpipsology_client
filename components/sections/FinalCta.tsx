@@ -6,6 +6,7 @@ import React from 'react';
 
 import { CTA_PRIMARY, CTA_SECONDARY } from '@/lib/content';
 import { Button } from '@/components/ui/Button';
+import { JoinCapsules } from '@/components/ui/JoinCapsules';
 import { RevealText } from '@/components/motion/RevealText';
 import { GoldShimmer } from '@/components/motion/GoldShimmer';
 import { LightLeak } from '@/components/fx/LightLeak';
@@ -46,28 +47,11 @@ export function FinalCta(): React.ReactElement {
             Education before <GoldShimmer>execution.</GoldShimmer>
           </RevealText>
 
-          <div className="flex flex-wrap justify-center items-center gap-3 mt-2">
+          <span className="font-body text-[11px] tracking-[0.28em] uppercase mt-2" style={{ color: 'rgba(245,239,235,0.7)' }}>{CTA_PRIMARY}</span>
+          <div className="flex flex-wrap justify-center items-center gap-3">
+            <JoinCapsules tone="dark" size="lg" idPrefix="cta-join" className="contents" />
             <Magnetic>
-              <Button
-                as="a"
-                href="mailto:apply@masterofpipsology.com"
-                size="lg"
-                variant="liquid"
-                id="cta-primary"
-              >
-                {CTA_PRIMARY}
-              </Button>
-            </Magnetic>
-            <Magnetic>
-              <Button
-                as="a"
-                href="#curriculum"
-                size="lg"
-                variant="outline"
-                id="cta-secondary"
-              >
-                {CTA_SECONDARY}
-              </Button>
+              <Button as="a" href="#curriculum" size="lg" variant="outline" id="cta-secondary">{CTA_SECONDARY}</Button>
             </Magnetic>
           </div>
 

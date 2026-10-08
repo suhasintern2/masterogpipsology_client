@@ -72,8 +72,18 @@ export const NAV_LINKS: NavLink[] = [
   { label: 'Results', href: '#gallery' },
 ];
 
-export const CTA_PRIMARY = 'Join the next cohort';
+export const CTA_PRIMARY = 'Join the team';
 export const CTA_SECONDARY = 'See the curriculum';
+
+// TODO: replace with the real invite links before launch.
+export const TELEGRAM_URL = '#telegram';
+export const WHATSAPP_URL = '#whatsapp';
+
+export interface JoinChannel { id: 'telegram' | 'whatsapp'; label: string; href: string }
+export const JOIN_CHANNELS: JoinChannel[] = [
+  { id: 'telegram', label: 'Join Telegram group', href: TELEGRAM_URL },
+  { id: 'whatsapp', label: 'Join WhatsApp group', href: WHATSAPP_URL },
+];
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 

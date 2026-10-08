@@ -794,3 +794,44 @@ html.js .rt-pending {
   .hm-section { height: auto; }
   .hm-sticky { position: relative; height: auto; min-height: 100svh; }
 }
+
+/* ─── Revisions 2: join capsules ─── */
+.cap-btn {
+  position: relative; isolation: isolate; overflow: hidden; display: inline-flex; align-items: center; justify-content: center;
+  gap: .55em; border-radius: 999px; border: 1px solid rgba(212, 175, 55, .85); color: #1a1408;
+  font-family: var(--font-body); font-weight: 600; white-space: nowrap; text-decoration: none; cursor: pointer;
+  background: transparent;
+  box-shadow: 0 6px 22px rgba(120, 90, 25, .22), inset 0 1px 0 rgba(255, 255, 255, .5);
+  transition: color .45s cubic-bezier(.16, 1, .3, 1), border-color .45s;
+}
+.cap-btn--sm { padding: 8px 16px; font-size: .875rem; }
+.cap-btn--lg { padding: 14px 26px; font-size: 1rem; }
+.cap-btn__icon { width: 1.05em; height: 1.05em; flex: none; }
+.cap-btn__fill { /* the colour drains downward on hover */
+  position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: linear-gradient(180deg, #F6E3A1 0%, #E2C163 35%, #D4AF37 55%, #B38728 80%, #8C6D23 100%);
+  transform-origin: 50% 100%; transform: scaleY(1); transition: transform .6s cubic-bezier(.16, 1, .3, 1);
+}
+.cap-btn__fill::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 45%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .45), transparent); }
+.cap-btn:hover .cap-btn__fill, .cap-btn:focus-visible .cap-btn__fill { transform: scaleY(0); }
+.cap-btn:hover, .cap-btn:focus-visible { color: var(--cap-hover-ink, #6B5320); border-color: #d4af37; }
+.cap-btn:focus-visible { outline: 2px solid #d4af37; outline-offset: 3px; }
+.join-caps[data-tone='light'] { --cap-hover-ink: #6B5320; }
+.join-caps[data-tone='dark'] { --cap-hover-ink: #F1D98A; }
+
+.join-trigger__chev { width: 14px; height: 14px; transition: transform .35s cubic-bezier(.16, 1, .3, 1); }
+.join-trigger[aria-expanded='true'] .join-trigger__chev { transform: rotate(180deg); }
+.lg-pill { --cap-hover-ink: #6B5320; }
+.lg-pill.lg-dark { --cap-hover-ink: #F1D98A; }
+
+.join-menu {
+  position: absolute; right: 0; top: calc(100% + 10px); min-width: 236px; padding: 10px; border-radius: 22px; z-index: 5;
+  background: rgba(250, 246, 237, .97); border: 1px solid rgba(212, 175, 55, .45);
+  box-shadow: 0 18px 48px rgba(40, 30, 10, .22);
+  transform-origin: 100% 0; opacity: 0; visibility: hidden; pointer-events: none; transform: translateY(-6px) scale(.98);
+  transition: opacity .25s ease, transform .35s cubic-bezier(.16, 1, .3, 1), visibility 0s linear .35s;
+}
+.join-menu[data-open] { opacity: 1; visibility: visible; pointer-events: auto; transform: none; transition-delay: 0s; }
+.lg-pill.lg-dark .join-menu { background: rgba(14, 12, 9, .95); }
+@media (prefers-reduced-motion: reduce) { .cap-btn, .cap-btn__fill, .join-menu, .join-trigger__chev { transition: none; } }
