@@ -10,6 +10,7 @@ import {
 } from 'framer-motion';
 import { TEAM_MEMBERS, GALLERY_MOMENTS, type TeamMember } from '@/lib/content';
 import { RevealText } from '@/components/motion/RevealText';
+import { LightLeak } from '@/components/fx/LightLeak';
 
 export function LuxuryTeamGallery(): React.ReactElement {
   const [activeTab, setActiveTab] = useState<'faculty' | 'moments'>('faculty');
@@ -44,6 +45,7 @@ export function LuxuryTeamGallery(): React.ReactElement {
         paddingTop: '20px',
       }}
     >
+      <LightLeak from="left" intensity={0.6} className="fx-leak--top" />
       {/* Deep atmospheric gold & obsidian ambient light */}
       <div
         aria-hidden="true"

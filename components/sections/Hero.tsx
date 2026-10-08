@@ -13,13 +13,15 @@ import React from 'react';
 // None of this changes the actual page background — only the decorative
 // gradient layers that live inside the hero animate.
 
-import { useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { motion, useInView } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { HeroLightLayers } from '@/components/sections/hero/HeroLightLayers';
 import { RevealText } from '@/components/motion/RevealText';
+import { LightLeak } from '@/components/fx/LightLeak';
 import { GoldShimmer } from '@/components/motion/GoldShimmer';
+import { loadProgress } from '@/lib/load-progress';
 import {
   HERO_SUBLINE,
   CTA_PRIMARY,
@@ -30,8 +32,23 @@ import {
   brassRuleVariants,
 } from '@/lib/motion';
 
+if (typeof window !== 'undefined') loadProgress.register('hero-image', 0.45);
+
 export function Hero(): React.ReactElement {
   const ref = useRef<HTMLElement>(null);
+  const bgImgRef = useRef<HTMLImageElement | null>(null);
+  const markHeroImage = useCallback((): void => {
+    const img = bgImgRef.current;
+    if (!img) return;
+    loadProgress.update('hero-image', 0.8);
+    const done = (): void => loadProgress.complete('hero-image');
+    if (typeof img.decode === 'function') img.decode().then(done, done);
+    else done();
+  }, []);
+  useEffect(() => {
+    // Image may have finished loading before hydration attached onLoad.
+    if (bgImgRef.current?.complete) markHeroImage();
+  }, [markHeroImage]);
   const inView = useInView(ref, { once: true, amount: 0.08 });
 
   const contentRef = useRef<HTMLDivElement>(null);
@@ -47,6 +64,8 @@ export function Hero(): React.ReactElement {
       <div className="absolute inset-0" aria-hidden="true">
         <Image
           src="/hero/hero-3200.jpg"
+          ref={bgImgRef}
+          onLoad={markHeroImage}
           alt=""
           fill
           preload
@@ -57,6 +76,7 @@ export function Hero(): React.ReactElement {
 
         <HeroLightLayers contentRef={contentRef} />
       </div>
+      <LightLeak from="right" intensity={0.7} className="fx-leak--bottom" />
 
       {/* ── Content ─────────────────────────────────────────────────────────── */}
       <div

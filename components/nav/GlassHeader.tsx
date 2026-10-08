@@ -226,7 +226,9 @@ export function GlassHeader(): React.ReactElement {
 
             {/* Desktop nav links */}
             <ul ref={ulRef} className="relative hidden md:flex items-center gap-6 lg:gap-8" role="list">
-              <span ref={indicatorRef} aria-hidden="true" className="lg-indicator" />
+              <li aria-hidden="true" role="presentation" className="absolute inset-0 pointer-events-none">
+                <span ref={indicatorRef} className="lg-indicator" />
+              </li>
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
                   <a

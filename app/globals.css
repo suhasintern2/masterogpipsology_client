@@ -416,7 +416,7 @@ body {
 @keyframes rt-failsafe { to { opacity: 1; } }
 html.js .rt-pending {
   opacity: 0;
-  animation: rt-failsafe 0s 3.5s forwards;
+  animation: rt-failsafe 0s 5.5s forwards;
 }
 @media (prefers-reduced-motion: reduce) {
   html.js .rt-pending { opacity: 1; animation: none; }
@@ -603,3 +603,65 @@ html.js .rt-pending {
   .lg-wrap, .lg-pill, .lg-text, .lg-link, .lg-wordmark, .lg-bar,
   .btn-liquid__fill, .btn-liquid__label { transition: none !important; }
 }
+
+/* ─── Phase 4: scroll-effects layer ──────────────────────────────────────────── */
+@keyframes pl-failsafe { to { visibility: hidden; opacity: 0; } }
+.preloader { animation: pl-failsafe 0s 5s forwards; }
+
+.pb-root { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+.pb-layer { position: absolute; inset: 0; }
+.pb-beige { background: #EFE7DC; }
+.pb-dark { background: #08080A; opacity: 0; }
+.pb-gold {
+  opacity: 0;
+  background: radial-gradient(ellipse 70% 55% at 50% 55%, rgba(212,175,55,.55), rgba(140,100,30,.25) 45%, transparent 75%);
+}
+
+.fx-grain {
+  position: fixed;
+  inset: -50%;
+  z-index: 60;
+  pointer-events: none;
+  background: url(/textures/grain-256.png);
+  opacity: .06;
+  animation: grain 0.8s steps(6) infinite;
+}
+@keyframes grain {
+  0% { transform: translate3d(0, 0, 0); }
+  17% { transform: translate3d(-5%, -8%, 0); }
+  33% { transform: translate3d(7%, 3%, 0); }
+  50% { transform: translate3d(-3%, 9%, 0); }
+  67% { transform: translate3d(8%, -6%, 0); }
+  83% { transform: translate3d(-9%, 4%, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) { .fx-grain { display: none; } }
+
+.fx-leak {
+  position: absolute;
+  top: 50%;
+  width: 60vmax;
+  height: 60vmax;
+  margin-top: -30vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,214,140,.35), rgba(212,175,55,.12) 40%, transparent 70%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  z-index: 1;
+}
+.fx-leak--bottom { top: 100%; }
+.fx-leak--top { top: 0; }
+
+.fx-cursor-ring, .fx-cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 95;
+  pointer-events: none;
+  border-radius: 50%;
+  will-change: transform;
+}
+.fx-cursor-ring { width: 36px; height: 36px; border: 1px solid #D4AF37; }
+.fx-cursor-dot { width: 6px; height: 6px; background: #D4AF37; }
+html.has-cursor, html.has-cursor a, html.has-cursor button { cursor: none; }
+html.has-cursor input, html.has-cursor textarea, html.has-cursor [contenteditable] { cursor: auto; }

@@ -16,19 +16,25 @@ import { Testimonial } from '@/components/sections/Testimonial';
 import { MagicRingShowcase } from '@/components/art/MagicRingShowcase';
 import { FinalCta } from '@/components/sections/FinalCta';
 import { Footer } from '@/components/sections/Footer';
-import { IntroAutoStart } from '@/components/motion/IntroAutoStart';
+import { Preloader } from '@/components/fx/Preloader';
+import { PaletteBackdrop } from '@/components/fx/PaletteBackdrop';
+import { Grain } from '@/components/fx/Grain';
+import { Cursor } from '@/components/fx/Cursor';
 
 export default function Page(): React.ReactElement {
   return (
     <>
+      <Preloader />
+      <PaletteBackdrop />
+      <Grain />
+      <Cursor />
       <LongTaskProbe />
-      <IntroAutoStart />
       {/* Fixed navigation */}
       <GlassHeader />
 
       {/* Page body — the scroll root for the theme system */}
       <div className="relative">
-        <main id="main-content" style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}>
+        <main id="main-content" style={{ color: 'var(--text)' }}>
           {/* Skip to main content link for keyboard users */}
           <a
             href="#main-content"
@@ -48,7 +54,7 @@ export default function Page(): React.ReactElement {
           <ForexMarketScroll />
 
           {/* ── PERSISTENT LUXURY BLACK EFFECT (Stays black all the way to page end) ── */}
-          <div data-nav-tone="dark" className="theme-black-section relative w-full bg-[#08080A] text-[#F5EFEB]">
+          <div data-nav-tone="dark" className="theme-black-section relative w-full text-[#F5EFEB]">
             {/* Luxury animated team movement gallery & moments */}
             <LuxuryTeamGallery />
 

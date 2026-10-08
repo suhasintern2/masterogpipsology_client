@@ -32,6 +32,8 @@ export interface UseFrameSequenceOptions {
   onActiveChange?: (visible: boolean) => void;
   prefetchMargin?: string;
   decodeMargin?: string;
+  /** Fired after a frame (global index) is decoded. */
+  onFrameReady?: (index: number) => void;
 }
 
 export interface FrameSequenceRefs {
@@ -91,6 +93,7 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
       urls,
       pinned: optsRef.current.pinned ?? [],
       background: optsRef.current.background,
+      onFrameReady: (i) => optsRef.current.onFrameReady?.(i),
     });
     engine.attachCanvas(canvas);
 

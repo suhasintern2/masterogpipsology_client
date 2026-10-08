@@ -2,6 +2,7 @@
 
 import React, { useRef, useCallback } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
+import { loadProgress } from '@/lib/load-progress';
 import { RevealText } from '@/components/motion/RevealText';
 
 // ── Tunable constants ────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@ const getFrameSrc = (index: number): string => {
 
 const SOURCES = [{ count: TOTAL_FRAMES, src: getFrameSrc }] as const;
 const PINNED = [0, TOTAL_FRAMES - 1] as const;
+if (typeof window !== 'undefined') loadProgress.register('crypto-first-frame', 0.15);
 const frameForProgress = (p: number, total: number): number =>
   Math.min(total - 1, Math.max(0, Math.round(p * (total - 1))));
 
@@ -42,6 +44,9 @@ export function CryptoMarketScroll(): React.ReactElement {
     frameForProgress,
     background: '#EFE7DC',
     onUpdate,
+    onFrameReady: (i) => {
+      if (i === 0) loadProgress.complete('crypto-first-frame');
+    },
   });
 
   return (

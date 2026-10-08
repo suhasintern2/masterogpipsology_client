@@ -8,14 +8,16 @@ import { CTA_PRIMARY, CTA_SECONDARY } from '@/lib/content';
 import { Button } from '@/components/ui/Button';
 import { RevealText } from '@/components/motion/RevealText';
 import { GoldShimmer } from '@/components/motion/GoldShimmer';
+import { LightLeak } from '@/components/fx/LightLeak';
 
 export function FinalCta(): React.ReactElement {
   return (
     <section
       id="cta"
-      className="py-24 md:py-36 px-4 md:px-8 lg:px-16"
+      className="relative overflow-hidden py-24 md:py-36 px-4 md:px-8 lg:px-16"
       aria-labelledby="cta-heading"
     >
+      <LightLeak from="right" intensity={0.6} />
       <div className="max-w-3xl mx-auto text-center flex flex-col items-center gap-8 relative">
         {/* Centred glow */}
         <div

@@ -29,6 +29,8 @@ export interface FrameSequenceEngineOptions {
   maxConcurrentFetches?: number;
   maxConcurrentDecodes?: number;
   nearWindow?: number;
+  /** Called after a frame bitmap is successfully decoded. */
+  onFrameReady?: (index: number) => void;
 }
 
 const FETCH_IDLE = 0;
@@ -49,6 +51,7 @@ export class FrameSequenceEngine {
   private readonly maxFetches: number;
   private readonly maxDecodes: number;
   private readonly nearWindow: number;
+  private readonly onFrameReady?: (index: number) => void;
 
   private fetchState: Uint8Array;
   private retries: Uint8Array;
@@ -96,6 +99,7 @@ export class FrameSequenceEngine {
     const hc = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 4 : 4;
     this.maxDecodes = opts.maxConcurrentDecodes ?? Math.min(3, Math.max(1, Math.floor(hc / 2) - 1));
     this.nearWindow = opts.nearWindow ?? 12;
+    this.onFrameReady = opts.onFrameReady;
 
     const n = this.total;
     this.isPinned = new Uint8Array(n);
@@ -431,6 +435,7 @@ export class FrameSequenceEngine {
           if (old === this.lastDrawn) this.lastDrawn = null;
           old.close();
         }
+        this.onFrameReady?.(i);
       })
       .catch(() => {
         if (!this.destroyed) this.fetchState[i] = FETCH_FAILED;
