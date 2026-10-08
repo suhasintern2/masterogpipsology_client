@@ -8,6 +8,7 @@ import React from 'react';
 
 import { useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import heroImg from '@/hero.png';
 import { motion, useInView } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { TypingHeading } from '@/components/ui/TypingHeading';
@@ -30,7 +31,7 @@ if (typeof window !== 'undefined') loadProgress.register('hero-image', 0.45);
 
 const HEADLINE: TypingSegment[] = [
   { text: 'Education before ' },
-  { text: 'execution', gold: true, flare: true },
+  { text: 'Execution', gold: true, flare: true },
 ];
 
 export const HERO_PHOTO_ZOOM = 1.12;
@@ -106,7 +107,7 @@ export function Hero(): React.ReactElement {
         {/* Photo: the only zoomed layer */}
         <div ref={photoRef} className="absolute inset-0" style={{ transformOrigin: '60% 50%', willChange: 'transform' }}>
           <Image
-            src="/hero/hero-3200.jpg"
+            src={heroImg}
             ref={bgImgRef}
             onLoad={markHeroImage}
             alt=""
