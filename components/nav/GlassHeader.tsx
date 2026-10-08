@@ -28,6 +28,7 @@ export function GlassHeader(): React.ReactElement {
   const ulRef = useRef<HTMLUListElement>(null);
   const indicatorRef = useRef<HTMLSpanElement>(null);
   const burgerRef = useRef<HTMLButtonElement>(null);
+  const bandRef = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
     mobileOpenRef.current = mobileOpen;
@@ -179,6 +180,19 @@ export function GlassHeader(): React.ReactElement {
         window.addEventListener('pointermove', onMove, { passive: true });
         cleanups.push(() => window.removeEventListener('pointermove', onMove));
       }
+
+      // Specular sweep across the glass every 5 s (1.4 s motion + 3.6 s rest).
+      const band = bandRef.current;
+      if (band && !reduced) {
+        const sheen = gsap.timeline({ repeat: -1, repeatDelay: 3.6, delay: 1.5 });
+        sheen.fromTo(band, { xPercent: -130 }, { xPercent: 390, duration: 1.4, ease: 'power2.inOut' });
+        const onVis = (): void => {
+          if (document.hidden) sheen.pause();
+          else sheen.resume();
+        };
+        document.addEventListener('visibilitychange', onVis);
+        cleanups.push(() => document.removeEventListener('visibilitychange', onVis));
+      }
     });
 
     return () => {
@@ -196,6 +210,9 @@ export function GlassHeader(): React.ReactElement {
         role="banner"
       >
         <div ref={pillRef} className="lg-pill pointer-events-auto">
+          <span className="lg-sheen" aria-hidden="true">
+            <span ref={bandRef} className="lg-sheen__band" />
+          </span>
           <nav
             className="lg-content relative flex items-center justify-between px-4 sm:px-5 py-2"
             aria-label="Primary navigation"

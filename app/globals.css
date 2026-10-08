@@ -532,6 +532,22 @@ html.js .rt-pending {
   mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
 }
 .lg-content { position: relative; z-index: 1; }
+.lg-sheen {
+  position: absolute; inset: 0; border-radius: inherit; overflow: hidden;
+  clip-path: inset(0 round 999px); /* Safari: clip the composited child */
+  pointer-events: none; z-index: 0;
+}
+.lg-sheen__band {
+  position: absolute; top: 0; bottom: 0; left: 0; width: 28%;
+  background: linear-gradient(105deg,
+    rgba(255,255,255,0) 0%, rgba(255,248,230,0) 22%,
+    rgba(255,248,230,.55) 46%, rgba(255,236,190,.38) 54%,
+    rgba(255,255,255,0) 78%);
+  mix-blend-mode: screen; opacity: .85; will-change: transform;
+  transform: translateX(-130%);
+}
+.lg-pill.lg-dark .lg-sheen__band { opacity: .5; }
+@media (prefers-reduced-motion: reduce) { .lg-sheen { display: none; } }
 
 .lg-text { color: inherit; transition: color 0.4s; }
 .lg-link { color: inherit; opacity: 0.88; transition: color 0.2s, opacity 0.2s; }
