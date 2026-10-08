@@ -48,6 +48,8 @@ const FETCH_READY = 2;
 const FETCH_FAILED = 3;
 
 const MAX_RETRIES = 4;
+/** Typical decode latency: decode where the scroll will be when the bitmap is ready. */
+const DECODE_LEAD_SEC = 0.12;
 const DEFAULT_SRC: Size = { w: 1920, h: 1080 };
 
 class HttpError extends Error {
@@ -112,6 +114,7 @@ export class FrameSequenceEngine {
   private velocity = 0;
   private lastUpdateMs = -1;
   private liveCount = 0;
+  private center = 0;
 
   private css: Size = { w: 0, h: 0 };
   private dpr = 1;
@@ -335,7 +338,7 @@ export class FrameSequenceEngine {
   }
 
   private score(j: number): number {
-    const delta = j - this.current;
+    const delta = j - this.center;
     const raw = Math.abs(delta);
     return delta * (this.dir >= 0 ? 1 : -1) < 0 ? raw * 2 : raw;
   }
@@ -399,12 +402,15 @@ export class FrameSequenceEngine {
     let hi = 0; // empty window unless decoding is enabled (pinned frames are still decoded)
     let stride = 1;
     let w = 0;
+    this.center = this.current;
     if (this.decodeEnabled) {
       w = Math.max(8, this.effectiveBudget() - this.pinned.length);
       const speed = Math.abs(this.velocity);
       const { ahead, behind } = lookahead(speed, w);
       stride = decodeStride(speed, ahead);
-      [lo, hi] = decodeWindow(this.current, this.dir, this.total, ahead * stride, behind);
+      const lead = Math.round(speed * DECODE_LEAD_SEC);
+      this.center = Math.min(this.total - 1, Math.max(0, this.current + this.dir * lead));
+      [lo, hi] = decodeWindow(this.current, this.dir, this.total, ahead * stride + lead, behind);
       let live = 0;
       for (let i = 0; i < this.total; i++) {
         if (!this.hasBitmap[i] || this.isPinned[i]) continue;
@@ -419,7 +425,7 @@ export class FrameSequenceEngine {
       needs[i] = this.fetchState[i] === FETCH_READY && !this.decoding[i] && !this.hasBitmap[i] ? 1 : 0;
     }
     while (this.inflightDecodes < this.maxDecodes) {
-      const i = pickNextDecode(needs, this.pinned, this.current, this.dir, lo, hi, stride);
+      const i = pickNextDecode(needs, this.pinned, this.center, this.dir, lo, hi, stride);
       if (i < 0) break;
       if (!this.isPinned[i] && this.liveCount + this.inflightDecodes >= w && !this.evictFarther(i)) break;
       needs[i] = 0;
