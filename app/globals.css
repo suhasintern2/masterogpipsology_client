@@ -841,3 +841,32 @@ html.js .rt-pending {
 .join-menu[data-open] { opacity: 1; visibility: visible; pointer-events: auto; transform: none; transition-delay: 0s; }
 .lg-pill.lg-dark .join-menu { background: rgba(14, 12, 9, .95); }
 @media (prefers-reduced-motion: reduce) { .cap-btn, .cap-btn__fill, .join-menu, .join-trigger__chev { transition: none; } }
+
+/* ─── Revisions 2: typing headline ─── */
+.th { position: relative; display: block; }
+.th-w { display: inline-block; white-space: nowrap; }
+.th-c { position: relative; display: inline-block; }
+.th-fx { position: relative; display: inline-block; }
+html.js .th-c { opacity: 0; animation: th-failsafe 0s 9s forwards; }
+html.js .th-c.is-on, html.js .th--static .th-c { opacity: 1; animation: none; }
+@keyframes th-failsafe { to { opacity: 1; } }
+.th-c--gold {
+  background-image: linear-gradient(180deg, #F6E3A1 0%, #E8CA65 38%, #D4AF37 62%, #A97F22 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; text-shadow: none;
+}
+.th-w--gold { filter: drop-shadow(0 2px 12px rgba(0, 0, 0, .3)); }
+.th-caret { position: absolute; left: 0; top: 0; width: 3px; height: .82em; border-radius: 2px; background: #D4AF37;
+  box-shadow: 0 0 10px rgba(212, 175, 55, .75); pointer-events: none; will-change: transform;
+  animation: th-blink .9s cubic-bezier(.4, 0, .6, 1) infinite; }
+@media (min-width: 640px) { .th-caret { width: 4px; } }
+@keyframes th-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+.th-flare { position: absolute; inset: 0; pointer-events: none; }
+.th-flare__edge { position: absolute; inset: 0; color: transparent; -webkit-text-fill-color: transparent;
+  -webkit-text-stroke: 1.25px #FFF4D2; text-shadow: 0 0 8px rgba(255, 236, 190, .95), 0 0 20px rgba(212, 175, 55, .7); opacity: 0; }
+.th-flare__star { position: absolute; left: 0; top: 30%; width: .42em; height: .42em; margin: -.21em 0 0 -.21em; opacity: 0;
+  will-change: transform, opacity;
+  background: radial-gradient(circle, #fff 0 10%, rgba(255, 244, 210, .85) 22%, rgba(255, 236, 190, 0) 62%); }
+.th-flare__star::before, .th-flare__star::after { content: ''; position: absolute; left: 50%; top: 50%; width: 160%; height: 2px;
+  margin: -1px 0 0 -80%; background: linear-gradient(90deg, transparent, #fff 50%, transparent); }
+.th-flare__star::after { transform: rotate(90deg); }
+@media (prefers-reduced-motion: reduce) { .th-caret { animation: none; } .th-flare { display: none; } }
