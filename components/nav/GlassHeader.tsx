@@ -11,7 +11,7 @@ import Image from 'next/image';
 import { NAV_LINKS } from '@/lib/content';
 import { MobileMenuSheet } from './MobileMenuSheet';
 import { LiquidGlassFilter } from './LiquidGlassFilter';
-import { JoinMenu } from './JoinMenu';
+import { StartJourneyButton } from './StartJourneyButton';
 import { gsap, ScrollTrigger } from '@/lib/gsap';
 import { onEveryFrame } from '@/lib/frame-loop';
 import { scrollStore } from '@/lib/scroll-store';
@@ -196,7 +196,7 @@ export function GlassHeader(): React.ReactElement {
 
             {/* Right side — CTA + hamburger */}
             <div className="flex items-center gap-3">
-              <div className="hidden md:block"><JoinMenu /></div>
+              <div className="hidden md:block"><StartJourneyButton size="sm" /></div>
 
               <button
                 ref={burgerRef}
