@@ -73,7 +73,7 @@ export const NAV_LINKS: NavLink[] = [
 ];
 
 export const CTA_PRIMARY = 'Join the team';
-export const CTA_SECONDARY = 'See the curriculum';
+export const CTA_SECONDARY = 'Start journey';
 
 // TODO: replace with the real invite links before launch.
 export const TELEGRAM_URL = '#telegram';

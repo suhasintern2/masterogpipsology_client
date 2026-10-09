@@ -4,8 +4,7 @@ import React from 'react';
 // Sits at the darkest point of the scroll transition (~100%).
 // Server Component.
 
-import { CTA_SECONDARY } from '@/lib/content';
-import { Button } from '@/components/ui/Button';
+import { StartJourneyLink } from '@/components/nav/StartJourneyLink';
 import { RevealText } from '@/components/motion/RevealText';
 import { GoldShimmer } from '@/components/motion/GoldShimmer';
 import { LightLeak } from '@/components/fx/LightLeak';
@@ -48,7 +47,7 @@ export function FinalCta(): React.ReactElement {
 
           <div className="flex flex-wrap justify-center items-center gap-3">
             <Magnetic>
-              <Button as="a" href="#curriculum" size="lg" variant="outline" id="cta-secondary">{CTA_SECONDARY}</Button>
+              <StartJourneyLink id="cta-secondary" />
             </Magnetic>
           </div>
 
