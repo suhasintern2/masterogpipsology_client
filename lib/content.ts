@@ -230,10 +230,8 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
   {
     heading: 'Locations',
     links: [
-      { label: 'London, UK', href: '#' },
-      { label: 'Dubai, UAE', href: '#' },
-      { label: 'Lagos, Nigeria', href: '#' },
-      { label: 'Online (global)', href: '#' },
+      { label: 'Mysore, India', href: '#' },
+      { label: 'Bengaluru, India', href: '#' },
     ],
   },
 ];
