@@ -898,3 +898,11 @@ html.js .th-c.is-on, html.js .th--static .th-c { opacity: 1; animation: none; }
 .seam--static .seam__line { transform: none; }
 .seam--static .seam__mark { transform: rotate(45deg); }
 .seam--static .seam__bloom { opacity: .35; transform: none; }
+
+/* Scroll captions: transform + opacity only; no movement under reduced motion. */
+.scroll-caption {
+  transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .scroll-caption { transition: none; }
+}

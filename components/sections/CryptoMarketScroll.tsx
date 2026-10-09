@@ -4,6 +4,8 @@ import React, { useRef, useCallback } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
 import { loadProgress } from '@/lib/load-progress';
 import { DepthStage } from '@/components/sections/DepthStage';
+import { ScrollCaptions, type CaptionDriver } from '@/components/sections/ScrollCaptions';
+import { CRYPTO_CAPTIONS } from '@/lib/scroll-captions';
 import { RevealText } from '@/components/motion/RevealText';
 import {
   buildFrameSet,
@@ -38,9 +40,11 @@ export function CryptoMarketScroll(): React.ReactElement {
   const hudProgressRef = useRef<HTMLDivElement>(null);
   const lastHud = useRef({ frame: -1, pct: -1 });
   const progressRef = useRef(0);
+  const captionRef: CaptionDriver = useRef(null);
 
   const onUpdate = useCallback(({ progress, frame }: FrameSequenceUpdate): void => {
     progressRef.current = progress;
+    captionRef.current?.(progress);
     const last = lastHud.current;
     if (frame !== last.frame) {
       last.frame = frame;
@@ -127,6 +131,7 @@ export function CryptoMarketScroll(): React.ReactElement {
             </div>
           </div>
         </div>
+        <ScrollCaptions captions={CRYPTO_CAPTIONS} driverRef={captionRef} />
       </div>
     </section>
   );

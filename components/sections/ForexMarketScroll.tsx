@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
 import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
 import { DepthStage } from '@/components/sections/DepthStage';
+import { ScrollCaptions, type CaptionDriver } from '@/components/sections/ScrollCaptions';
+import { FOREX_CAPTIONS } from '@/lib/scroll-captions';
 import { RevealText } from '@/components/motion/RevealText';
 import {
   buildFrameSet,
@@ -98,6 +100,7 @@ export function ForexMarketScroll(): React.ReactElement {
   const revealedRef = useRef(false);
   const reducedRef  = useRef(false);
   const progressRef = useRef(0);
+  const captionRef: CaptionDriver = useRef(null);
   const shadeElRef  = useRef<HTMLElement | null>(null);
   const geomRef     = useRef<{ native: HRect; lock: HRect } | null>(null);
 
@@ -179,6 +182,7 @@ export function ForexMarketScroll(): React.ReactElement {
 
   const onUpdate = ({ progress, frame }: FrameSequenceUpdate): void => {
     progressRef.current = progress;
+    captionRef.current?.(Math.min(1, progress / FRAME_SCROLL_PORTION));
     const { seq, localIdx } = resolveSeq(frame);
     const rawLocal = UNIQUE_LOCAL[localIdx];
     const globalIdx = seq.rawStart + rawLocal;
@@ -423,6 +427,7 @@ export function ForexMarketScroll(): React.ReactElement {
           </div>
 
         </div>
+        <ScrollCaptions captions={FOREX_CAPTIONS} driverRef={captionRef} />
       </div>
     </section>
   );
