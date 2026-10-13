@@ -899,10 +899,26 @@ html.js .th-c.is-on, html.js .th--static .th-c { opacity: 1; animation: none; }
 .seam--static .seam__mark { transform: rotate(45deg); }
 .seam--static .seam__bloom { opacity: .35; transform: none; }
 
-/* Scroll captions: transform + opacity only; no movement under reduced motion. */
-.scroll-caption {
-  transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-@media (prefers-reduced-motion: reduce) {
-  .scroll-caption { transition: none; }
-}
+/* ─── Workflow captions (components/sections/ScrollCaptions.tsx) ─── */
+/* Scrubbed from the frame tick by JS: transform + opacity only, no CSS transitions. Mobile first; md = 48rem. */
+.wf { --wf-rail: 1.375rem; --wf-gap: 1.25rem; --wf-node: 8px; --wf-node-y: 1.15rem; --wf-focus: 9.5rem; }
+@media (width >= 48rem) { .wf { --wf-rail: 1.75rem; --wf-gap: 1.75rem; --wf-node: 9px; --wf-node-y: 1.35rem; --wf-focus: 11.5rem; } }
+.wf__track { position: absolute; left: 0; top: 0; width: 100%; display: flex; flex-direction: column; gap: var(--wf-gap); will-change: transform; }
+.wf__step { position: relative; padding-left: var(--wf-rail); visibility: hidden; }
+.wf__node { position: absolute; left: 0; top: var(--wf-node-y); width: var(--wf-node); height: var(--wf-node); margin-top: calc(var(--wf-node) / -2);
+  background: linear-gradient(135deg, #F6E3A1, #D4AF37 50%, #8C6D23);
+  box-shadow: 0 0 0 1px rgba(250, 246, 237, .55), 0 0 12px rgba(212, 175, 55, .5);
+  opacity: 0; transform: rotate(45deg) scale(.6); will-change: transform, opacity; }
+.wf__line { position: absolute; left: calc(var(--wf-node) / 2 - .5px); top: var(--wf-node-y);
+  bottom: calc(-1 * (var(--wf-gap) + var(--wf-node-y))); width: 1px;
+  background: linear-gradient(180deg, #D4AF37, #B38728);
+  box-shadow: 0 0 0 .5px rgba(250, 246, 237, .3), 0 0 8px rgba(212, 175, 55, .35);
+  transform-origin: 50% 0; transform: scaleY(0); opacity: 0; will-change: transform, opacity; }
+.wf__plate { position: relative; opacity: 0; will-change: transform, opacity; }
+.wf__plate::before { content: ''; position: absolute; right: 100%; top: calc(var(--wf-node-y) - 1.5px); height: 1px;
+  width: calc(var(--wf-rail) - var(--wf-node) * 1.5);
+  background: linear-gradient(90deg, rgba(179, 135, 40, .5), #B38728); }
+.wf__spark { position: absolute; left: calc(var(--wf-node) / 2); top: 0; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+  border-radius: 50%; opacity: 0; pointer-events: none; will-change: transform, opacity;
+  background: radial-gradient(circle, #fff 0 20%, #F6E3A1 42%, rgba(212, 175, 55, 0) 70%); }
+@media (prefers-reduced-motion: reduce) { .wf__spark { display: none; } }

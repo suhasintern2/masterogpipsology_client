@@ -8,15 +8,20 @@ import {
   MARQUEE_ITEMS,
   NAV_LINKS,
 } from '@/lib/content';
+import { spreadWindows, type FlowWindow } from '@/lib/caption-flow';
 
-export interface ScrollCaption {
+/** Fully shown while start <= progress <= end; the connector to the next step draws between end and the next start. */
+export interface ScrollCaption extends FlowWindow {
   /** Small-caps label above the line. */
   label: string;
   /** Display serif line. */
   text: string;
-  /** Active while start <= progress < end (progress of the host sequence, 0..1). */
-  start: number;
-  end: number;
+}
+
+export interface CaptionFlow {
+  from: number;
+  to: number;
+  steps: ScrollCaption[];
 }
 
 const market = (id: string) => MARKETS.find((m) => m.id === id)!;
@@ -26,13 +31,11 @@ const chapterLabel = (n: number) => `${programme} ${chapter(n).number}`;
 
 /** Spread `lines` evenly over [from, to] with a small gap between each. */
 function spread(lines: Array<[string, string]>, from: number, to: number): ScrollCaption[] {
-  const step = (to - from) / lines.length;
-  const gap = step * 0.14;
-  return lines.map(([label, text], i) => ({
-    label,
-    text,
-    start: from + i * step + gap / 2,
-    end: from + (i + 1) * step - gap / 2,
+  return spreadWindows(lines.length, from, to).map((w, i) => ({
+    label: lines[i][0],
+    text: lines[i][1],
+    start: w.start,
+    end: w.end,
   }));
 }
 
@@ -41,7 +44,10 @@ const forex = market('forex');
 const equities = market('equities');
 
 // Crypto: progress 0..1 of the section.
-export const CRYPTO_CAPTIONS: ScrollCaption[] = spread(
+export const CRYPTO_FLOW: CaptionFlow = {
+  from: 0.04,
+  to: 0.94,
+  steps: spread(
   [
     [crypto.heading, crypto.body.split(' exhibit')[0]], // "Crypto markets run 24/7"
     [crypto.heading, crypto.kicker],
@@ -52,12 +58,16 @@ export const CRYPTO_CAPTIONS: ScrollCaption[] = spread(
   ],
   0.04,
   0.94,
-);
+  ),
+};
 
 // Forex sequence: progress is the frame-scroll fraction 0..1 (forex, stock, opportunity thirds).
 // Everything ends by 0.91 so captions are gone before the HUD fade and the Intelligence hand-off.
 const T = 1 / 3;
-export const FOREX_CAPTIONS: ScrollCaption[] = [
+export const FOREX_FLOW: CaptionFlow = {
+  from: 0.01,
+  to: 0.91,
+  steps: [
   ...spread(
     [
       [forex.heading, forex.kicker],
@@ -91,4 +101,5 @@ export const FOREX_CAPTIONS: ScrollCaption[] = [
     2 * T,
     0.91,
   ),
-];
+  ],
+};

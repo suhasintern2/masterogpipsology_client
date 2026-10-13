@@ -5,7 +5,7 @@
 //   decode() : createImageBitmap(blob) with NO options (crop/resize run on Chrome's main thread, R1),
 //              into a velocity-aware, memory-budgeted, direction-biased bitmap cache shared across
 //              engines. Anything outside is close()d. Bitmaps are source-sized, so resizes never re-decode.
-//   draw()   : fractional position -> frame floor(pos) opaque with floor(pos)+1 blended over it (smoothstep alpha,
+//   draw()   : fractional position -> frame floor(pos) opaque with floor(pos)+1 blended over it (blendAlpha, linear by default,
 //              1/64 steps) when both are decoded and not separated by a hard cut; otherwise the nearest decoded
 //              frame. Cover-scaled on draw (GPU). Redraws only when the frame pair or alpha step changes.
 

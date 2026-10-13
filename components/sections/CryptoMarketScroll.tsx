@@ -5,7 +5,7 @@ import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/u
 import { loadProgress } from '@/lib/load-progress';
 import { DepthStage } from '@/components/sections/DepthStage';
 import { ScrollCaptions, type CaptionDriver } from '@/components/sections/ScrollCaptions';
-import { CRYPTO_CAPTIONS } from '@/lib/scroll-captions';
+import { CRYPTO_FLOW } from '@/lib/scroll-captions';
 import { RevealText } from '@/components/motion/RevealText';
 import {
   buildFrameSet,
@@ -131,7 +131,7 @@ export function CryptoMarketScroll(): React.ReactElement {
             </div>
           </div>
         </div>
-        <ScrollCaptions captions={CRYPTO_CAPTIONS} driverRef={captionRef} />
+        <ScrollCaptions flow={CRYPTO_FLOW} driverRef={captionRef} />
       </div>
     </section>
   );

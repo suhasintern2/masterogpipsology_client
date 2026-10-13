@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planBlend, smoothstep, BLEND_LEVELS } from '../lib/frame-sequence/math.ts';
+import { planBlend, smoothstep, blendAlpha, BLEND_SOFTNESS, BLEND_LEVELS } from '../lib/frame-sequence/math.ts';
 import { UNIQUE_PER_SEQ } from '../lib/frame-sequence/sources.ts';
 
 const PER = UNIQUE_PER_SEQ; // 192
@@ -38,19 +38,19 @@ test('planBlend: mid position blends floor and floor+1 at alpha 0.5', () => {
   assert.equal(p.q, BLEND_LEVELS / 2);
 });
 
-test('planBlend: alpha is smoothstep(frac), quantised to 1/64 steps', () => {
+test('planBlend: alpha is blendAlpha(frac), quantised to 1/64 steps', () => {
   for (const frac of [0.1, 0.25, 0.4, 0.6, 0.75, 0.9]) {
     const p = planBlend(20 + frac, 192);
     assert.equal(p.a, 20);
     assert.equal(p.b, 21);
-    assert.equal(p.q, Math.round(smoothstep(frac) * BLEND_LEVELS));
+    assert.equal(p.q, Math.round(blendAlpha(frac) * BLEND_LEVELS));
     assert.ok(Number.isInteger(p.q) && p.q > 0 && p.q < BLEND_LEVELS);
   }
 });
 
 test('planBlend: alpha near 0 or 1 collapses to one frame (no wasted overlay draw)', () => {
-  assert.deepEqual(planBlend(30.01, 192), { a: 30, b: -1, q: 0 });
-  assert.deepEqual(planBlend(30.99, 192), { a: 31, b: -1, q: 0 });
+  assert.deepEqual(planBlend(30.005, 192), { a: 30, b: -1, q: 0 });
+  assert.deepEqual(planBlend(30.995, 192), { a: 31, b: -1, q: 0 });
 });
 
 test('planBlend: alpha rises with position; quantised key changes are bounded', () => {
@@ -114,4 +114,42 @@ test('planBlend: Forex hand-off progress maps onto the last frame with frac 0', 
     assert.deepEqual(planBlend(frameForProgress(p, TOTAL), TOTAL, cuts), { a: TOTAL - 1, b: -1, q: 0 });
   }
   assert.deepEqual(planBlend(frameForProgress(0, TOTAL), TOTAL, cuts), { a: 0, b: -1, q: 0 });
+});
+
+test('BLEND_SOFTNESS is linear (0)', () => {
+  assert.equal(BLEND_SOFTNESS, 0);
+});
+
+test('blendAlpha: endpoints, midpoint, clamp, monotonic for any softness', () => {
+  for (const s of [0, 0.5, 1]) {
+    assert.equal(blendAlpha(0, s), 0);
+    assert.equal(blendAlpha(1, s), 1);
+    assert.equal(blendAlpha(0.5, s), 0.5);
+    assert.equal(blendAlpha(-1, s), 0);
+    assert.equal(blendAlpha(2, s), 1);
+    let prev = -1;
+    for (let i = 0; i <= 100; i++) {
+      const v = blendAlpha(i / 100, s);
+      assert.ok(v >= prev);
+      prev = v;
+    }
+  }
+});
+
+test('blendAlpha: softness 0 is linear, softness 1 is smoothstep', () => {
+  for (const x of [0.1, 0.25, 0.6, 0.9]) {
+    assert.ok(Math.abs(blendAlpha(x, 0) - x) < 1e-12);
+    assert.ok(Math.abs(blendAlpha(x, 1) - smoothstep(x)) < 1e-12);
+  }
+});
+
+test('planBlend: even cross-dissolve cadence at a steady speed', () => {
+  // Linear gives steps 11, 10, 11, 11, 10, 11; smoothstep would give 5, 12, 15, 15, 12, 5.
+  const qs = [];
+  for (let k = 0; k <= 6; k++) {
+    const p = planBlend(40 + k / 6, 192);
+    qs.push(p.b >= 0 ? p.q : p.a === 41 ? BLEND_LEVELS : 0);
+  }
+  const diffs = qs.slice(1).map((q, i) => q - qs[i]);
+  assert.ok(Math.max(...diffs) - Math.min(...diffs) <= 1, String(diffs));
 });

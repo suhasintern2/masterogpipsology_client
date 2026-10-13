@@ -5,7 +5,7 @@ import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/u
 import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
 import { DepthStage } from '@/components/sections/DepthStage';
 import { ScrollCaptions, type CaptionDriver } from '@/components/sections/ScrollCaptions';
-import { FOREX_CAPTIONS } from '@/lib/scroll-captions';
+import { FOREX_FLOW } from '@/lib/scroll-captions';
 import { RevealText } from '@/components/motion/RevealText';
 import {
   buildFrameSet,
@@ -427,7 +427,7 @@ export function ForexMarketScroll(): React.ReactElement {
           </div>
 
         </div>
-        <ScrollCaptions captions={FOREX_CAPTIONS} driverRef={captionRef} />
+        <ScrollCaptions flow={FOREX_FLOW} driverRef={captionRef} />
       </div>
     </section>
   );

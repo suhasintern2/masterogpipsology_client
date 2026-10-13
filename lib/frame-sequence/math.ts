@@ -81,12 +81,20 @@ export function smoothstep(t: number): number {
   return x * x * (3 - 2 * x);
 }
 
+/** Blend curve: 0 = linear (even cross-dissolve rate on every refresh, smoothest motion), 1 = smoothstep (dwells on whole frames). */
+export const BLEND_SOFTNESS = 0;
+/** Alpha of frame floor(pos)+1 for a fractional part `frac`. Clamped; blendAlpha(0)=0, (0.5)=0.5, (1)=1 for any softness in [0,1]. */
+export function blendAlpha(frac: number, softness: number = BLEND_SOFTNESS): number {
+  const x = clamp01(frac);
+  return x + (smoothstep(x) - x) * clamp01(softness);
+}
+
 /** What to paint for a fractional frame position. b < 0: draw `a` alone. Else draw `a`, then `b` over it at alpha q / BLEND_LEVELS. */
 export interface BlendPlan { a: number; b: number; q: number }
 
 /**
  * Draw-time frame blending. `pos` is a fractional frame position (clamped to 0..total-1).
- * Frame floor(pos) is drawn opaque, floor(pos)+1 over it at smoothstep(frac), alpha quantised to 1/BLEND_LEVELS.
+ * Frame floor(pos) is drawn opaque, floor(pos)+1 over it at blendAlpha(frac), alpha quantised to 1/BLEND_LEVELS.
  * Alpha that rounds to 0 or 1 collapses to a single frame, and the last frame (pos >= total-1) is always drawn alone.
  * cuts[i] truthy = frame i -> i+1 is a hard cut (different shot): never blended, the nearest frame is shown instead.
  */
@@ -98,7 +106,7 @@ export function planBlend(pos: number, total: number, cuts?: ArrayLike<number> |
   if (base >= last) return { a: last, b: -1, q: 0 };
   const frac = p - base;
   if (cuts && cuts[base]) return { a: Math.round(p), b: -1, q: 0 };
-  const q = Math.round(smoothstep(frac) * BLEND_LEVELS);
+  const q = Math.round(blendAlpha(frac) * BLEND_LEVELS);
   if (q <= 0) return { a: base, b: -1, q: 0 };
   if (q >= BLEND_LEVELS) return { a: base + 1, b: -1, q: 0 };
   return { a: base, b: base + 1, q };
