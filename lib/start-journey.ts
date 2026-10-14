@@ -15,12 +15,12 @@ export function startJourney(): void {
   if (lenis) {
     const target = el.getBoundingClientRect().top + window.scrollY;
     if (reduced) {
-      lenis.scrollTo(target, { immediate: true });
+      lenis.scrollTo(target, { immediate: true, force: true });
       return;
     }
     const plan = planJourney(lenis.animatedScroll, target, window.innerHeight);
-    if (plan.cutTo !== null) lenis.scrollTo(plan.cutTo, { immediate: true });
-    lenis.scrollTo(target, { duration: plan.duration, easing: easeInOutCubic, lock: true });
+    if (plan.cutTo !== null) lenis.scrollTo(plan.cutTo, { immediate: true, force: true });
+    lenis.scrollTo(target, { duration: plan.duration, easing: easeInOutCubic, lock: true, force: true });
   } else {
     el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
   }

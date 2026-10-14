@@ -514,6 +514,11 @@ export class FrameSequenceEngine {
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
+  /** URL actually used for frame i (per-frame JPEG fallback aware). Debug HUD only. */
+  urlOf(i: number): string {
+    return (this.perFrameFallback[i] && this.fallbackUrls ? this.fallbackUrls[i] : this.urls[i]) ?? '';
+  }
+
   private startFetch(i: number): void {
     this.fetchState[i] = FETCH_INFLIGHT;
     this.inflightFetches++;

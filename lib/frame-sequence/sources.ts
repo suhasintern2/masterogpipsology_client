@@ -20,6 +20,8 @@ export const UNIQUE_LOCAL: readonly number[] = uniqueLocalFrames(); // 192 entri
 export const UNIQUE_PER_SEQ = UNIQUE_LOCAL.length; // 192
 /** Scroll distance (vh) that plays one source sequence. Crypto: 450vh section - 100vh sticky. */
 export const SEQ_SCROLL_VH = 350;
+/** Forex is pulled up by this much (marginTop) so it fades in over Crypto's last screen (components/fx/ForexFade.tsx). */
+export const FOREX_OVERLAP_VH = 100;
 export const PORTRAIT_MAX_ASPECT = 0.8; // 864/1080
 export const LITE_MAX_BACKING_W = 1408;
 export const TIER_SIZE: Record<FrameTier, { w: number; h: number }> = {

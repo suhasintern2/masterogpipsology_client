@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { frameUrl, buildFrameSet, chooseFrameTier, warmIndices, uniqueLocalFrames, UNIQUE_LOCAL, UNIQUE_PER_SEQ, SEQ_SCROLL_VH } from '../lib/frame-sequence/sources.ts';
+import { frameUrl, buildFrameSet, chooseFrameTier, warmIndices, uniqueLocalFrames, UNIQUE_LOCAL, UNIQUE_PER_SEQ, SEQ_SCROLL_VH, FOREX_OVERLAP_VH } from '../lib/frame-sequence/sources.ts';
 
 test('frameUrl', () => {
   assert.equal(frameUrl('crypto', 0, 'full'), '/assets/crypto/ezgif-frame-001.jpg');
@@ -45,6 +45,7 @@ test('uniqueLocalFrames drops pulldown duplicates', () => {
   assert.equal(uniqueLocalFrames(240).length, 192);
   assert.equal(UNIQUE_PER_SEQ, 192);
   assert.equal(SEQ_SCROLL_VH, 350);
+  assert.equal(FOREX_OVERLAP_VH, 100);
   assert.deepEqual(UNIQUE_LOCAL.slice(0, 7), [0, 1, 3, 4, 5, 6, 8]);
   assert.ok(UNIQUE_LOCAL.includes(239));
   for (const x of [2, 7, 237]) assert.ok(!UNIQUE_LOCAL.includes(x));

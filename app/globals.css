@@ -922,3 +922,49 @@ html.js .th-c.is-on, html.js .th--static .th-c { opacity: 1; animation: none; }
   border-radius: 50%; opacity: 0; pointer-events: none; will-change: transform, opacity;
   background: radial-gradient(circle, #fff 0 20%, #F6E3A1 42%, rgba(212, 175, 55, 0) 70%); }
 @media (prefers-reduced-motion: reduce) { .wf__spark { display: none; } }
+
+/* ─── Crypto slab texts (components/sections/CryptoSlabs.tsx) ─── */
+/* Scrubbed from the Crypto frame tick by JS (lib/crypto-slabs.ts): transform + opacity only, no CSS transitions. */
+.cslab { position: absolute; pointer-events: none; visibility: hidden; }
+.cslab [data-part] { opacity: 0; will-change: transform, opacity; }
+.cslab--intro { inset: 0; }
+.cslab__label { display: flex; align-items: center; gap: .6rem; font-family: var(--font-body); font-size: var(--fs-label);
+  font-weight: 600; letter-spacing: .28em; text-transform: uppercase; font-variant: small-caps; color: #8C6D23; }
+.cslab__rule { display: block; width: 1.5rem; height: 1px; background: #D4AF37; }
+.cslab__title { margin-top: .75rem; font-family: var(--font-display); font-weight: 500; line-height: 1.08; letter-spacing: -.01em;
+  color: #0E0F14; text-shadow: 0 1px 18px rgba(255, 255, 255, .6); }
+.cslab__title em { font-style: italic; font-weight: 400; color: #B38728; }
+.cslab__body { margin-top: 1rem; font-family: var(--font-body); font-size: clamp(.875rem, .8rem + .2vw, 1rem); line-height: 1.6; color: #524C42; }
+.cslab__path { margin-top: 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; font-family: var(--font-body);
+  font-size: var(--fs-label); font-weight: 600; letter-spacing: .24em; text-transform: uppercase; color: #38332B; }
+.cslab__path i { display: block; width: 5px; height: 5px; transform: rotate(45deg);
+  background: linear-gradient(135deg, #F6E3A1, #D4AF37 50%, #8C6D23); }
+
+/* Slab 2: phones/portrait = top band under the nav pill; landscape >= md = top-left, clear of the ETH/SOL coins
+   (lower-left), the BTC flight (x >= 35%) in frames 112-139, and the caption rail (bottom-left). */
+.cslab--teach { left: 1.25rem; right: 1.25rem; top: 5rem; }
+.cslab--teach .cslab__title { font-size: clamp(1.5rem, 6.4vw, 2rem); }
+.cslab--teach .cslab__body { display: none; }
+@media (width >= 48rem) and (min-aspect-ratio: 4/5) {
+  .cslab--teach { left: max(1.5rem, 4.5vw); right: auto; top: 6.5rem; width: min(22rem, 28vw); }
+  .cslab--teach .cslab__title { font-size: clamp(1.75rem, 1rem + 1.6vw, 2.75rem); }
+  .cslab--teach .cslab__body { display: block; }
+}
+@media (max-height: 30rem) { .cslab--teach .cslab__body { display: none; } }
+
+/* Slab 3 (stop raw 179): centred above the falling coin. --coin-top = coin row 440/1080 under cover-fit and DepthStage push-in;
+   the text is visible only while the coin top is >= row 480 (lib/crypto-slabs.ts, tests/crypto-slabs.test.mjs). */
+.cslab--close { --coin-top: min(39dvh, calc(50dvh - 6.1vw)); --coin-gap: clamp(.75rem, 2.5dvh, 1.5rem);
+  left: 0; right: 0; bottom: calc(100% - var(--coin-top) + var(--coin-gap)); padding: 0 1.25rem; text-align: center; }
+.cslab--close .cslab__label { justify-content: center; }
+.cslab--close .cslab__title { margin-top: .5rem; font-size: clamp(1.5rem, min(4.4dvh, 3vw), 3.25rem); }
+.cslab--close .cslab__br { display: none; }
+@media (max-aspect-ratio: 4/5) {
+  .cslab--close { --coin-top: 40dvh; }
+  .cslab--close .cslab__title { font-size: clamp(1.5rem, 6.5vw, 2.75rem); }
+  .cslab--close .cslab__br { display: inline; }
+}
+@media (max-height: 30rem) {
+  .cslab--close .cslab__label { display: none; }
+  .cslab--close .cslab__title { font-size: 1.25rem; }
+}

@@ -9,6 +9,7 @@ import {
   NAV_LINKS,
 } from '@/lib/content';
 import { spreadWindows, type FlowWindow } from '@/lib/caption-flow';
+import { cryptoRailSpec } from '@/lib/crypto-slabs';
 
 /** Fully shown while start <= progress <= end; the connector to the next step draws between end and the next start. */
 export interface ScrollCaption extends FlowWindow {
@@ -43,22 +44,19 @@ const crypto = market('crypto');
 const forex = market('forex');
 const equities = market('equities');
 
-// Crypto: progress 0..1 of the section.
+// Crypto: driven by the stop coordinate (CryptoMarketScroll passes railU(s)): one hold per stop, transitions only between stops.
+const cryptoRail = cryptoRailSpec();
+const cryptoLines: Array<[string, string]> = [
+  [crypto.heading, crypto.body.split(' exhibit')[0]], // entry (raw 1): "Crypto markets run 24/7"
+  [crypto.heading, crypto.kicker],                    // passes mid-glide of slab 1
+  [crypto.heading, crypto.tags[0]],                   // stop raw 112: Bitcoin & Ethereum
+  [crypto.heading, crypto.tags[1]],                   // stop raw 139: On-chain data
+  [chapterLabel(1), MARQUEE_ITEMS[4]],                // stop raw 179 (hand-off): Programme 01 · Liquidity Analysis
+];
 export const CRYPTO_FLOW: CaptionFlow = {
-  from: 0.04,
-  to: 0.94,
-  steps: spread(
-  [
-    [crypto.heading, crypto.body.split(' exhibit')[0]], // "Crypto markets run 24/7"
-    [crypto.heading, crypto.kicker],
-    [crypto.heading, crypto.tags[0]],
-    [crypto.heading, crypto.tags[1]],
-    [chapterLabel(1), MARQUEE_ITEMS[4]],
-    [crypto.heading, crypto.tags[2]],
-  ],
-  0.04,
-  0.94,
-  ),
+  from: cryptoRail.from,
+  to: cryptoRail.to,
+  steps: cryptoLines.map(([label, text], i) => ({ label, text, start: cryptoRail.steps[i].start, end: cryptoRail.steps[i].end })),
 };
 
 // Forex sequence: progress is the frame-scroll fraction 0..1 (forex, stock, opportunity thirds).

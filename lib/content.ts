@@ -209,6 +209,30 @@ export const FINAL_CTA_HEADLINE = 'Education before execution.';
 /** Closing statement over the Intelligence video at the end of the Forex journey. Line 2 renders gold italic. */
 export const CLOSING_LINES: readonly [string, string] = ['Three markets. One discipline.', 'The opportunity is yours.'];
 
+// ─── Crypto step slabs (components/sections/CryptoSlabs.tsx) ────────────────
+export interface CryptoSlabCopy {
+  /** Wide-tracked small-caps label. */
+  label: string;
+  /** Display serif title: [plain part, gold italic part]. */
+  title: readonly [string, string];
+  /** Optional paragraph (hidden on phones, portrait and short screens). */
+  body?: string;
+  /** Optional path row, separated by gold diamonds. */
+  path?: readonly string[];
+}
+/** Slab 2 (frames 112 -> 139). DRAFT for the owner to edit: how Master of Pipsology teaches crypto, basics to trading. */
+export const CRYPTO_SLAB_TEACH: CryptoSlabCopy = {
+  label: 'How we teach crypto',
+  title: ['From the very basics', 'to your first trade.'],
+  body: 'We start at zero: what crypto is, how exchanges work, how to read a chart. Then structure, liquidity and risk, step by step, until you can plan and manage a trade on your own.',
+  path: ['Basics', 'Structure', 'Risk', 'Trading'],
+};
+/** Slab 3 (frames 139 -> 179, the hand-off stop): centred above the falling coin. DRAFT for the owner to edit. */
+export const CRYPTO_SLAB_CLOSE: CryptoSlabCopy = {
+  label: 'Asset class 01 · Crypto',
+  title: ['Every coin moves on structure.', 'Learn to read it.'],
+};
+
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
 export const FOOTER_COLUMNS: FooterColumn[] = [

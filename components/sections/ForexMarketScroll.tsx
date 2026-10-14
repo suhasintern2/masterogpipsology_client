@@ -12,6 +12,7 @@ import {
   warmIndices,
   FRAMES_PER_SEQ,
   SEQ_SCROLL_VH,
+  FOREX_OVERLAP_VH,
   UNIQUE_LOCAL,
   UNIQUE_PER_SEQ,
   type FrameSet,
@@ -294,7 +295,7 @@ export function ForexMarketScroll(): React.ReactElement {
       className="relative w-full z-20"
       style={{
         height: `${SCROLL_HEIGHT_VH}vh`,
-        marginTop: '-100vh',
+        marginTop: `-${FOREX_OVERLAP_VH}vh`,
         backgroundColor: 'transparent',
       }}
     >
