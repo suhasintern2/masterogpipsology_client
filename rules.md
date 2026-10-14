@@ -51,7 +51,7 @@ Rulebook for anyone (human or AI) changing or deploying this site. Commit before
 
 ## 3. Content Rules
 
-- **Copy:** Don't change unless owner explicitly asks
+- **Copy:** Don't change unless owner explicitly asks. Crypto section copy lives in `CRYPTO_SLAB_INTRO`, `CRYPTO_SLAB_TEACH`, `CRYPTO_SLAB_CLOSE`, and `CRYPTO_RAIL_LINES` in `lib/content.ts`
 - **Metrics:** No fake numbers — no hardcoded/random counters, stats, FPS readouts, or "real data" you invented. Only real data is allowed.
 - **Assets:** Never delete
 - **Social links:** Placeholders in `lib/content.ts` — verify names before launch:
@@ -70,6 +70,7 @@ Rulebook for anyone (human or AI) changing or deploying this site. Commit before
   - Display: Cormorant Garamond
   - Body: Manrope
   - Labels: Wide-tracked small caps
+  - Crypto step-scroll texts: Bodoni Moda (display), motion 'Rise and lift' (docs/plans/crypto-text-motion.md)
 - **Hero:** Original static photo (`root hero.png` via `next/image`) + only gentle scroll zoom. No dark overlays, no 3D.
 - **Headlines:** Letter by letter with gold "execution" and light flare on its first "e"
 - **Nav chips:** Soft foggy beige-gold border-trace, then fill on hover (nothing flashy)

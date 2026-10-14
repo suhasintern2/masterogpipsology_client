@@ -109,6 +109,17 @@ export function stepStyle(j: number, s: FlowState, prevDim: number, out?: StepSt
   return o;
 }
 
+export interface TextPhase { vin: number; vout: number }
+/** Text phase of rail step j: vin while it becomes current, vout while it leaves the trail (or the flow exits). */
+export function stepTextPhase(j: number, s: FlowState, out?: TextPhase): TextPhase {
+  const o = out ?? { vin: 0, vout: 0 };
+  const i = s.index;
+  o.vin = j < i ? 1 : j === i ? s.enter : j === i + 1 ? s.advance : 0;
+  const leave = j < i - 1 ? 1 : j === i - 1 ? s.advance : 0;
+  o.vout = leave > s.exit ? leave : s.exit;
+  return o;
+}
+
 export function trackOffset(rowTop: ArrayLike<number>, s: FlowState): number {
   const n = rowTop.length;
   if (n === 0) return 0;

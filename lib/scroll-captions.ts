@@ -1,11 +1,11 @@
-// Scroll caption copy. Every string is derived from lib/content.ts (no new claims or numbers).
+// Scroll caption copy. Every string is derived from lib/content.ts (no new claims or numbers); the Crypto rail copy is CRYPTO_RAIL_LINES.
 import {
   BRAND_NAME,
   BRAND_TAGLINE,
+  CRYPTO_RAIL_LINES,
   CURRICULUM_CHAPTERS,
   FINAL_CTA_HEADLINE,
   MARKETS,
-  MARQUEE_ITEMS,
   NAV_LINKS,
 } from '@/lib/content';
 import { spreadWindows, type FlowWindow } from '@/lib/caption-flow';
@@ -40,23 +40,15 @@ function spread(lines: Array<[string, string]>, from: number, to: number): Scrol
   }));
 }
 
-const crypto = market('crypto');
 const forex = market('forex');
 const equities = market('equities');
 
 // Crypto: driven by the stop coordinate (CryptoMarketScroll passes railU(s)): one hold per stop, transitions only between stops.
 const cryptoRail = cryptoRailSpec();
-const cryptoLines: Array<[string, string]> = [
-  [crypto.heading, crypto.body.split(' exhibit')[0]], // entry (raw 1): "Crypto markets run 24/7"
-  [crypto.heading, crypto.kicker],                    // passes mid-glide of slab 1
-  [crypto.heading, crypto.tags[0]],                   // stop raw 112: Bitcoin & Ethereum
-  [crypto.heading, crypto.tags[1]],                   // stop raw 139: On-chain data
-  [chapterLabel(1), MARQUEE_ITEMS[4]],                // stop raw 179 (hand-off): Programme 01 · Liquidity Analysis
-];
 export const CRYPTO_FLOW: CaptionFlow = {
   from: cryptoRail.from,
   to: cryptoRail.to,
-  steps: cryptoLines.map(([label, text], i) => ({ label, text, start: cryptoRail.steps[i].start, end: cryptoRail.steps[i].end })),
+  steps: CRYPTO_RAIL_LINES.map(([label, text], i) => ({ label, text, start: cryptoRail.steps[i].start, end: cryptoRail.steps[i].end })),
 };
 
 // Forex sequence: progress is the frame-scroll fraction 0..1 (forex, stock, opportunity thirds).

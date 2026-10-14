@@ -5,7 +5,7 @@
 export interface SlabWindow { inFrom: number; inTo: number; outFrom: number; outTo: number }
 export type SlabId = 'intro' | 'teach' | 'close';
 
-// s: -1..0 approach, 0..3 the three slabs (stops raw 1, 112, 139, 179), 3..4 the hand-off fade into Forex.
+// s: -1..0 approach, 0..3 the three slabs (stops raw 1, 112, 139, 179), 3..4 slab 4: the hand-off glide 179 -> Forex frame 1.
 export const CRYPTO_SLAB_WINDOWS: Readonly<Record<SlabId, SlabWindow>> = {
   intro: { inFrom: -0.6, inTo: -0.05, outFrom: 1.0, outTo: 1.3 },  // slab 1: in on entry, out as slab 2 starts
   teach: { inFrom: 1.35, inTo: 1.85, outFrom: 2.0, outTo: 2.3 },   // slab 2: in during 112->139, out as slab 3 starts
@@ -22,12 +22,12 @@ const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
 const smooth = (t: number): number => { const x = clamp01(t); return x * x * (3 - 2 * x); };
 const ramp = (x: number, a: number, b: number): number => (b > a ? clamp01((x - a) / (b - a)) : x >= b ? 1 : 0);
 
-/** Style of part j of n at stop coordinate s. Continuous in s; reduced = discrete 0/1 at the window midpoints, no movement. */
+/** Style of part j of n at stop coordinate s. Continuous in s; reduced = whole-part crossfade over the windows, no movement. */
 export function slabPart(s: number, w: SlabWindow, j: number, n: number, reduced: boolean = false, out?: PartStyle): PartStyle {
   const o: PartStyle = out ?? { opacity: 0, y: 0 };
   const x = Number.isNaN(s) ? -Infinity : s;
   if (reduced) {
-    o.opacity = x >= (w.inFrom + w.inTo) / 2 && x < (w.outFrom + w.outTo) / 2 ? 1 : 0;
+    o.opacity = smooth(ramp(x, w.inFrom, w.inTo)) * (1 - smooth(ramp(x, w.outFrom, w.outTo)));
     o.y = 0;
     return o;
   }
@@ -40,6 +40,15 @@ export function slabPart(s: number, w: SlabWindow, j: number, n: number, reduced
   o.opacity = vin * (1 - vout);
   o.y = (1 - vin) * SLAB_RISE_PX - vout * SLAB_LIFT_PX;
   return o;
+}
+
+/** 0 before inFrom, 1 entering, 2 hold [inTo, outFrom), 3 leaving [outFrom, outTo], 4 after. Even zones are static. NaN -> 0. */
+export function slabZone(s: number, w: SlabWindow): 0 | 1 | 2 | 3 | 4 {
+  if (Number.isNaN(s) || s < w.inFrom) return 0;
+  if (s < w.inTo) return 1;
+  if (s < w.outFrom) return 2;
+  if (s <= w.outTo) return 3;
+  return 4;
 }
 
 // ── Caption rail timing (Crypto): holds centred on stops, transitions strictly between them ──

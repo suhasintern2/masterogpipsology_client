@@ -22,14 +22,13 @@ import {
   STOP_TOL_PX,
   SWIPE_MIN_PX,
   createWheelGesture,
-  cruiseEase,
   decideStep,
   feedWheel,
   framePos,
+  glideEase,
+  glideProfile,
   nearestStop,
-  rampShare,
   sectionProgressOf,
-  stepDuration,
   stopAt,
   stopCoord,
   stopScrollY,
@@ -45,6 +44,8 @@ export interface StepScrollOptions {
   knotP: number;
   /** Cruise speed in list frames per second. Default STEP_FPS. */
   fps?: number;
+  /** Extra last stop at a scroll offset (not a frame): Crypto = ForexFade end, Forex frame 1 opaque. Frame there is not snapped. */
+  tail?: (l: Readonly<SequenceLayout>) => number;
 }
 
 interface TouchState {
@@ -67,6 +68,7 @@ export class StepScrollController {
   private readonly knotIdx: number;
   private readonly knotP: number;
   private readonly fps: number;
+  private readonly tail?: (l: Readonly<SequenceLayout>) => number;
 
   private ys: number[] = [];
   private layout: SequenceLayout = { top: 0, height: 0, viewportH: 0 };
@@ -99,6 +101,7 @@ export class StepScrollController {
     this.knotIdx = options.stops[options.stops.length - 1] ?? 0;
     this.knotP = options.knotP;
     this.fps = options.fps ?? STEP_FPS;
+    this.tail = options.tail;
   }
 
   // ── Public API (called by the section) ──
@@ -106,7 +109,12 @@ export class StepScrollController {
   onLayout = (l: Readonly<SequenceLayout>): void => {
     this.layout = { top: l.top, height: l.height, viewportH: l.viewportH };
     const range = l.height - l.viewportH;
-    this.ys = this.stops.map((i) => stopScrollY(i, this.total, this.knotIdx, this.knotP, l.top, range));
+    const base = this.stops.map((i) => stopScrollY(i, this.total, this.knotIdx, this.knotP, l.top, range));
+    if (this.tail && base.length > 0) {
+      const t = Math.min(l.top + range, this.tail(l));
+      if (t > base[base.length - 1] + STOP_TOL_PX) base.push(t);
+    }
+    this.ys = base;
     this.ready = l.height > l.viewportH && this.ys.length > 0;
     if (!this.ready) return;
     if (!this.gliding) {
@@ -130,7 +138,8 @@ export class StepScrollController {
   coord = (scroll: number): number => {
     const n = this.ys.length;
     if (n === 0) return -1;
-    const exit = this.layout.top + (this.layout.height - this.layout.viewportH) - this.ys[n - 1]; // the hand-off fade
+    const end = this.layout.top + (this.layout.height - this.layout.viewportH);
+    const exit = this.ys.length > this.stops.length ? this.layout.viewportH : end - this.ys[n - 1]; // the hand-off fade
     return stopCoord(scroll, this.ys, this.layout.viewportH, exit);
   };
 
@@ -219,7 +228,7 @@ export class StepScrollController {
     const k = moving || !this.ready ? -1 : stopAt(this.ys, this.y(), STOP_TOL_PX);
     if (k >= 0 && this.restStop < 0) this.holdUntil = performance.now() + HOLD_MIN_MS; // landing: brief hold
     this.restStop = k;
-    this.restIdx = k >= 0 ? this.stops[k] : -1;
+    this.restIdx = k >= 0 && k < this.stops.length ? this.stops[k] : -1;
   }
 
   private jump(Y: number): void {
@@ -246,13 +255,12 @@ export class StepScrollController {
       this.jump(Y); // reduced motion (no Lenis): straight to the stop
       return;
     }
-    const d = stepDuration(frames, this.fps);
-    const share = rampShare(d);
+    const prof = glideProfile(frames, this.fps);
     this.gliding = true;
-    this.glideDeadline = performance.now() + d * 1000 + GLIDE_WATCHDOG_MS;
+    this.glideDeadline = performance.now() + prof.duration * 1000 + GLIDE_WATCHDOG_MS;
     L.scrollTo(Y, {
-      duration: d,
-      easing: (t) => cruiseEase(t, share),
+      duration: prof.duration,
+      easing: (t) => glideEase(t, prof),
       lock: true,
       force: true,
       onComplete: () => {

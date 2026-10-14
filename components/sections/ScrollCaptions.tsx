@@ -7,11 +7,16 @@ import {
   stepStyle,
   trackOffset,
   sparkStyle,
+  stepTextPhase,
   FLOW_PREV_DIM,
   type FlowState,
   type StepStyle,
   type SparkStyle,
+  type TextPhase,
 } from '@/lib/caption-flow';
+import { enterAt, leaveAt } from '@/lib/text-motion';
+import { SplitWords } from '@/components/motion/SplitWords';
+import { collectUnits, invalidateUnits, writeUnit, type ScrubUnit } from '@/components/motion/scrub-units';
 
 /** Imperative driver: call with the host sequence progress (0..1) from its onUpdate. */
 export type CaptionDriver = { current: ((progress: number) => void) | null };
@@ -21,19 +26,22 @@ const INK = '#0B0B0B';
 interface Props {
   flow: CaptionFlow;
   driverRef: CaptionDriver;
+  /** 'crypto' adds the word-by-word rise-and-lift text motion and the Bodoni face; Forex keeps the default look. */
+  variant?: 'default' | 'crypto';
 }
 
 /**
  * Workflow rail. No React state: every node, connector, box and the spark are pure functions of the
  * host sequence progress, written (transform + opacity only) from the same tick that draws the frames.
  */
-export function ScrollCaptions({ flow, driverRef }: Props): React.ReactElement {
+export function ScrollCaptions({ flow, driverRef, variant = 'default' }: Props): React.ReactElement {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const sparkRef = useRef<HTMLSpanElement | null>(null);
   const rowRefs = useRef<Array<HTMLElement | null>>([]);
   const nodeRefs = useRef<Array<HTMLElement | null>>([]);
   const plateRefs = useRef<Array<HTMLElement | null>>([]);
   const lineRefs = useRef<Array<HTMLElement | null>>([]);
+  const motion = variant === 'crypto';
   const steps = flow.steps;
   const n = steps.length;
 
@@ -47,6 +55,8 @@ export function ScrollCaptions({ flow, driverRef }: Props): React.ReactElement {
     const lines = lineRefs.current;
 
     const count = flow.steps.length;
+    const units: ScrubUnit[][] = motion ? rows.map((r) => (r ? collectUnits(r) : [])) : [];
+    const tp: TextPhase = { vin: 0, vout: 0 };
     const rowTop = new Float64Array(count);
     let nodeY = 0;
     let measured = false;
@@ -74,6 +84,7 @@ export function ScrollCaptions({ flow, driverRef }: Props): React.ReactElement {
       cTrack = '';
       cSparkT = '';
       cSparkO = '';
+      for (const l of units) invalidateUnits(l);
     };
 
     const reduceMq = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -106,6 +117,15 @@ export function ScrollCaptions({ flow, driverRef }: Props): React.ReactElement {
         if (j < count - 1) {
           put(lines[j], cLineT, j, `scaleY(${ss.line.toFixed(4)})`, setTransform);
           put(lines[j], cLineO, j, ss.lineOpacity.toFixed(3), setOpacity);
+        }
+        if (motion) {
+          stepTextPhase(j, st, tp);
+          const list = units[j];
+          for (let k = 0; k < list.length; k++) {
+            const u = list[k];
+            if (reduced) writeUnit(u, 1, 0);
+            else writeUnit(u, enterAt(tp.vin, 0, 1, u.part, u.parts, u.unit, u.units), leaveAt(tp.vout, 0, 1, u.part, u.parts, u.unit, u.units));
+          }
         }
       }
       const t = `translate3d(0,${(-trackOffset(rowTop, st)).toFixed(2)}px,0)`;
@@ -151,12 +171,12 @@ export function ScrollCaptions({ flow, driverRef }: Props): React.ReactElement {
       reduceMq.removeEventListener('change', onReduce);
       shortMq.removeEventListener('change', onShort);
     };
-  }, [flow, driverRef]);
+  }, [flow, driverRef, motion]);
 
   return (
     <div
       aria-hidden="true"
-      className="wf absolute inset-x-0 z-40 pointer-events-none"
+      className={`wf ${motion ? 'wf--crypto ' : ''}absolute inset-x-0 z-40 pointer-events-none`}
       style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + var(--wf-focus))', height: 0 }}
     >
       <div className="relative mx-auto w-full max-w-7xl px-5 sm:px-8 md:px-12 lg:px-16">
@@ -175,17 +195,11 @@ export function ScrollCaptions({ flow, driverRef }: Props): React.ReactElement {
                     color: INK,
                   }}
                 >
-                  <div
-                    className="text-[10px] md:text-[11px] font-body uppercase tracking-[0.28em] font-semibold"
-                    style={{ color: INK, fontVariant: 'small-caps' }}
-                  >
-                    {c.label}
+                  <div data-part className="text-[10px] md:text-[11px] font-body uppercase tracking-[0.28em] font-semibold" style={{ color: INK, fontVariant: 'small-caps' }}>
+                    {motion ? <span className="tm-mask"><span className="tm-u" data-u="rise">{c.label}</span></span> : c.label}
                   </div>
-                  <div
-                    className="mt-1 font-medium leading-tight text-xl md:text-2xl"
-                    style={{ fontFamily: 'var(--font-display)', color: INK }}
-                  >
-                    {c.text}
+                  <div data-part className="wf__text mt-1 font-medium leading-tight text-xl md:text-2xl" style={{ color: INK }}>
+                    {motion ? <SplitWords text={c.text} kind="tilt" /> : c.text}
                   </div>
                 </div>
               </div>

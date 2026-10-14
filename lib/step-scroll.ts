@@ -4,7 +4,9 @@
 export const CRYPTO_STOPS_RAW: readonly number[] = [1, 112, 139, 179];
 
 export const STEP_FPS = 48;              // cruise speed, list (unique) frames per second: 2x the 24 fps source motion
-export const STEP_RAMP_S = 0.4;          // ease-in and ease-out time at each end of a step
+export const STEP_EASE_IN_S = 0.4;       // smoothstep velocity ramp 0 -> STEP_FPS at the start of a glide (9.6 frames)
+export const STEP_DECEL_S = 1.0;         // momentum release into every stop: v = V (1 - u)^STEP_DECEL_POW (16 frames)
+export const STEP_DECEL_POW = 2;
 export const STEP_MIN_S = 0.8;           // floor for very short steps (21-frame slab 2 = 0.84 s stays unclamped)
 export const HOLD_MIN_MS = 450;          // every landing holds at least this long; input inside it is swallowed
 export const STOP_TOL_PX = 2;            // "at a stop": Lenis rests on window.scrollY (device-pixel rounded)
@@ -73,29 +75,59 @@ export function stopScrollY(idx: number, total: number, knotIdx: number, knotP: 
   return top + progressAt(idx, total, knotIdx, knotP) * range;
 }
 
-/** Step duration (s): frames at fps plus one ramp (two half-speed ramps of `ramp`), floored at `min`. */
-export function stepDuration(frames: number, fps: number = STEP_FPS, ramp: number = STEP_RAMP_S, min: number = STEP_MIN_S): number {
-  return Math.max(min, Math.abs(frames) / (fps > 0 ? fps : STEP_FPS) + ramp);
-}
-
-/** Ramp share of a step for cruiseEase. */
-export function rampShare(duration: number, ramp: number = STEP_RAMP_S): number {
-  return duration > 0 ? clamp(ramp / duration, 0, 0.5) : 0.5;
-}
-
 /**
- * Position 0..1 at time t 0..1 for a smooth trapezoid velocity profile: velocity rises with smoothstep over [0, a],
- * holds 1 / (1 - a), and falls over [1 - a, 1]. a is clamped to [0, 0.5]. Symmetric: e(t) + e(1 - t) = 1.
+ * Scroll offset where ForexFade completes = the Forex section top (Forex marginTop -overlap vh; Crypto height (seq + 100) vh).
+ * Desktop (L = D) this equals Crypto progress 1; on mobile it is (L - D) px earlier. Forex shows list 0 at opacity 1 here.
  */
-export function cruiseEase(t: number, a: number): number {
-  const x = clamp(Number.isNaN(t) ? 0 : t, 0, 1);
-  const r = clamp(Number.isNaN(a) ? 0 : a, 0, 0.5);
-  if (r === 0) return x;
-  const v = 1 / (1 - r);
+export function handoffEndY(top: number, height: number, seqScrollVh: number, overlapVh: number): number {
+  const total = seqScrollVh + 100;
+  return total > 0 ? top + (height * (total - overlapVh)) / total : top;
+}
+
+export interface GlideProfile { frames: number; v: number; tIn: number; tCruise: number; tOut: number; duration: number }
+
+/** Velocity profile for a glide of |frames| list frames: smoothstep in, cruise at fps, power-law decel (plan 9.2). */
+export function glideProfile(frames: number, fps: number = STEP_FPS, tIn: number = STEP_EASE_IN_S, tOut: number = STEP_DECEL_S,
+  pow: number = STEP_DECEL_POW, min: number = STEP_MIN_S): GlideProfile {
+  const D = Math.abs(Number.isFinite(frames) ? frames : 0);
+  let v = fps > 0 ? fps : STEP_FPS;
+  let ti = tIn;
+  let to = tOut;
+  let tc = 0;
+  const dMin = v * (ti / 2 + to / (pow + 1));
+  if (D >= dMin) tc = (D - dMin) / v;
+  else { const k = dMin > 0 ? D / dMin : 0; ti *= k; to *= k; }
+  let d = ti + tc + to;
+  if (d < min) {
+    if (d > 0) { const m = min / d; ti *= m; tc *= m; to *= m; v /= m; }
+    else { ti = 0; tc = 0; to = min; v = 0; } // zero-length glide: hold still for `min`
+    d = min;
+  }
+  return { frames: D, v, tIn: ti, tCruise: tc, tOut: to, duration: d };
+}
+
+/** Position 0..1 at time t 0..1 of a glide with profile p (Lenis scrollTo easing). Exact 0 and 1 at the ends. */
+export function glideEase(t: number, p: GlideProfile, pow: number = STEP_DECEL_POW): number {
+  if (!(p.frames > 0)) return t >= 1 ? 1 : 0;
+  const x = Number.isNaN(t) ? 0 : t < 0 ? 0 : t > 1 ? 1 : t;
+  if (x >= 1) return 1;
+  let tau = x * p.duration;
   const S = (u: number): number => u * u * u - (u * u * u * u) / 2; // integral of smoothstep, S(1) = 1/2
-  if (x < r) return v * r * S(x / r);
-  if (x > 1 - r) return 1 - v * r * S((1 - x) / r);
-  return v * (r / 2 + (x - r));
+  let pos: number;
+  if (tau < p.tIn) pos = p.v * p.tIn * S(tau / p.tIn);
+  else {
+    pos = (p.v * p.tIn) / 2;
+    tau -= p.tIn;
+    if (tau < p.tCruise) pos += p.v * tau;
+    else {
+      pos += p.v * p.tCruise;
+      tau -= p.tCruise;
+      const u = p.tOut > 0 ? Math.min(1, tau / p.tOut) : 1;
+      pos += (p.v * p.tOut * (1 - Math.pow(1 - u, pow + 1))) / (pow + 1);
+    }
+  }
+  const e = pos / p.frames;
+  return e < 0 ? 0 : e > 1 ? 1 : e;
 }
 
 export interface WheelGesture { id: number; lastT: number; sign: number; level: number }

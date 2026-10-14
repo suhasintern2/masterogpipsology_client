@@ -3,15 +3,18 @@ import assert from 'node:assert/strict';
 import {
   CRYPTO_STOPS_RAW,
   STEP_FPS,
-  STEP_RAMP_S,
+  STEP_EASE_IN_S,
+  STEP_DECEL_S,
+  STEP_DECEL_POW,
+  glideProfile,
+  glideEase,
+  handoffEndY,
   stopListIndex,
   knotProgress,
   framePos,
   progressAt,
   stopScrollY,
   sectionProgressOf,
-  stepDuration,
-  cruiseEase,
   createWheelGesture,
   feedWheel,
   decideStep,
@@ -73,39 +76,100 @@ test('mobile: the hand-off stop is never inside the fade', () => {
   }
 });
 
-test('stepDuration', () => {
-  near(stepDuration(89), 2.25417, 1e-5);
-  near(stepDuration(21), 0.8375);
-  near(stepDuration(32), 1.06667, 1e-5);
-  for (const f of [89, 21, 32]) near(f / (stepDuration(f) - STEP_RAMP_S), STEP_FPS, 1e-9);
-  assert.equal(stepDuration(5), 0.8);
+test('glideProfile durations', () => {
+  near(glideProfile(89).duration, 2.7208333, 1e-6);
+  near(glideProfile(21).duration, 1.1484375, 1e-6);
+  near(glideProfile(32).duration, 1.5333333, 1e-6);
+  near(glideProfile(49).duration, 1.8875, 1e-6);
+  assert.equal(glideProfile(5).duration, 0.8);
+  assert.equal(glideProfile(0).duration, 0.8);
+  for (const f of [89, 32, 49]) {
+    const p = glideProfile(f);
+    assert.equal(p.v, STEP_FPS);
+    assert.equal(p.tIn, STEP_EASE_IN_S);
+    assert.equal(p.tOut, STEP_DECEL_S);
+  }
+  assert.equal(glideProfile(21).v, STEP_FPS);
+  assert.equal(glideProfile(21).tCruise, 0);
 });
 
-test('cruiseEase', () => {
-  for (const a of [0, 0.1, 0.37, 0.48, 0.5, 0.9]) {
-    near(cruiseEase(0, a), 0);
-    near(cruiseEase(1, a), 1);
-    const r = Math.min(a, 0.5);
-    let prev = -1;
-    for (let i = 0; i <= 1000; i++) {
-      const t = i / 1000;
-      const e = cruiseEase(t, a);
+test('glideEase ends and shape', () => {
+  for (const f of [0.5, 5, 21, 32, 49, 89]) {
+    const p = glideProfile(f);
+    assert.equal(glideEase(0, p), 0);
+    assert.equal(glideEase(1, p), 1);
+    assert.equal(glideEase(NaN, p), 0);
+    assert.equal(glideEase(-1, p), 0);
+    assert.equal(glideEase(2, p), 1);
+    const dt = 1e-4;
+    let prev = 0;
+    let prevV = 0;
+    for (let i = 1; i <= 10000; i++) {
+      const e = glideEase(i * dt, p);
       assert.ok(e >= prev - 1e-12);
+      const vel = ((e - prev) * p.frames) / (dt * p.duration);
+      assert.ok(vel <= STEP_FPS + 1e-6, `vel ${vel} f=${f}`);
+      if (i > 1) assert.ok(Math.abs(vel - prevV) < 0.5, `jump ${vel - prevV} f=${f} i=${i}`);
       prev = e;
-      near(e + cruiseEase(1 - t, a), 1, 1e-12);
-      if (i > 0) assert.ok((e - cruiseEase(t - 0.001, a)) / 0.001 <= 1 / (1 - r) + 1e-3);
+      prevV = vel;
     }
-    if (r > 0 && r < 0.5) {
-      near(cruiseEase(r + 1e-7, a), cruiseEase(r - 1e-7, a), 1e-6);
-      near(cruiseEase(1 - r + 1e-7, a), cruiseEase(1 - r - 1e-7, a), 1e-6);
-      const mid = (cruiseEase(0.5 + 0.0005, a) - cruiseEase(0.5 - 0.0005, a)) / 0.001;
-      near(mid, 1 / (1 - r), 1e-6);
+    assert.ok(prevV < 0.01, `final velocity ${prevV}`);
+  }
+});
+
+test('glideEase decel length', () => {
+  for (const f of [25.6, 32, 49, 89]) {
+    const p = glideProfile(f);
+    const at = (sec) => glideEase((p.duration - sec) / p.duration, p) * p.frames;
+    near(p.frames - at(STEP_DECEL_S), (STEP_FPS * STEP_DECEL_S) / (STEP_DECEL_POW + 1), 1e-9);
+    near(p.frames - at(0.5), 2, 1e-9);
+  }
+});
+
+test('glide asymmetry is deliberate', () => {
+  const p = glideProfile(89);
+  const tFor = (target) => {
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 60; i++) {
+      const m = (lo + hi) / 2;
+      if (glideEase(m, p) * p.frames < target) lo = m; else hi = m;
     }
+    return lo * p.duration;
+  };
+  const first = tFor(16);
+  const last = p.duration - tFor(89 - 16);
+  assert.ok(first < last);
+});
+
+test('handoffEndY', () => {
+  assert.equal(handoffEndY(1000, 4500, 350, 100), 4500);
+  const L = 1000;
+  for (const D of [1000, 950, 900, 800]) {
+    const y = handoffEndY(0, 4.5 * L, 350, 100);
+    near(y, 3500);
+    assert.ok(y <= 4.5 * L - D);
+    assert.ok(y > stopScrollY(142, 192, 142, KP, 0, 4.5 * L - D) + 2);
   }
-  for (const t of [0.1, 0.4, 0.8]) {
-    near(cruiseEase(t, 0), t);
-    near(cruiseEase(t, 0.9), cruiseEase(t, 0.5));
-  }
+});
+
+test('stopCoord with five stops', () => {
+  const ys = [1000, 2567, 2937, 3500, 4500];
+  near(stopCoord(3500, ys, 1000, 1000), 3);
+  near(stopCoord(4000, ys, 1000, 1000), 3.5);
+  near(stopCoord(4500, ys, 1000, 1000), 4);
+  near(stopCoord(5000, ys, 1000, 1000), 4.5);
+  near(stopCoord(9000, ys, 1000, 1000), 5);
+});
+
+test('decideStep with the tail', () => {
+  const ys = [1000, 2567, 2937, 3500, 4500];
+  const base = { target: 0, dir: 1, fresh: true, acted: null, busy: false };
+  const d = (o) => decideStep(ys, 2, { ...base, ...o });
+  assert.deepEqual(d({ y: 4500 }), { kind: 'pass' });
+  assert.deepEqual(d({ y: 4500, dir: -1 }), { kind: 'glide', stop: 3 });
+  assert.deepEqual(d({ y: 6000, dir: -1, target: 4400 }), { kind: 'catch', stop: 4 });
+  assert.deepEqual(d({ y: 3500 }), { kind: 'glide', stop: 4 });
 });
 
 function run(g, events) {

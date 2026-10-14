@@ -8,7 +8,7 @@ import { DepthStage } from '@/components/sections/DepthStage';
 import { ScrollCaptions, type CaptionDriver } from '@/components/sections/ScrollCaptions';
 import { CryptoSlabs, type SlabDriver } from '@/components/sections/CryptoSlabs';
 import { CRYPTO_FLOW } from '@/lib/scroll-captions';
-import { CRYPTO_STOPS_RAW, knotProgress, framePos, stopListIndex } from '@/lib/step-scroll';
+import { CRYPTO_STOPS_RAW, knotProgress, framePos, stopListIndex, handoffEndY } from '@/lib/step-scroll';
 import { railU } from '@/lib/crypto-slabs';
 import {
   buildFrameSet,
@@ -31,7 +31,10 @@ const CRYPTO_STOP_INDICES: readonly number[] = CRYPTO_STOPS_RAW.map((r) => stopL
 const CRYPTO_KNOT_IDX = CRYPTO_STOP_INDICES[CRYPTO_STOP_INDICES.length - 1]; // 142 = raw 179, the hand-off stop
 // raw 179 is shown exactly where ForexFade starts (Crypto top + 250vh); raw 180-240 keep playing under the fade.
 const CRYPTO_KNOT_P = knotProgress(SEQ_SCROLL_VH, FOREX_OVERLAP_VH); // 5/7
-const CRYPTO_STEP: StepScrollOptions = { stops: CRYPTO_STOP_INDICES, total: TOTAL_FRAMES, knotP: CRYPTO_KNOT_P };
+const CRYPTO_STEP: StepScrollOptions = {
+  stops: CRYPTO_STOP_INDICES, total: TOTAL_FRAMES, knotP: CRYPTO_KNOT_P,
+  tail: (l) => handoffEndY(l.top, l.height, SEQ_SCROLL_VH, FOREX_OVERLAP_VH), // slab 4: 179 -> Forex frame 1 (fade complete)
+};
 // Every landing frame (and the last frame) fetched first and never evicted.
 const PINNED: readonly number[] = [...CRYPTO_STOP_INDICES, TOTAL_FRAMES - 1]; // [0, 89, 110, 142, 191]
 // First 24 frames, then every 8th: a coarse fallback exists before the full fetch starts.
@@ -119,7 +122,7 @@ export function CryptoMarketScroll(): React.ReactElement {
 
         {/* Slab texts – transform/opacity only, scrubbed by the stop coordinate */}
         <CryptoSlabs driverRef={slabRef} />
-        <ScrollCaptions flow={CRYPTO_FLOW} driverRef={captionRef} />
+        <ScrollCaptions flow={CRYPTO_FLOW} driverRef={captionRef} variant="crypto" />
       </div>
     </section>
   );
