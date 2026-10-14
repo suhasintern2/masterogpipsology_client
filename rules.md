@@ -77,7 +77,7 @@ Rulebook for anyone (human or AI) changing or deploying this site. Commit before
 - **Cursor:** No custom cursor
 - **Sections:**
   - Crypto → Forex: Forex fades in and overlaps Crypto
-  - Intelligence: Show only "Be a man." / "Take that goddamn risk."
+  - Intelligence: calm two-line serif closing statement (`CLOSING_LINES` in `lib/content.ts`), second line gold italic, fade-in only. No drips or effects.
   - Moments: Swipe card stack
   - Gold seam transitions between sections
   - Logo (Rings of Precision): Centred and locked
@@ -107,4 +107,4 @@ Rulebook for anyone (human or AI) changing or deploying this site. Commit before
 
 ---
 
-**Last updated:** 2026-10-08
+**Last updated:** 2026-10-14

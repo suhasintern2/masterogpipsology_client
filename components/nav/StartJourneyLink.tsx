@@ -8,12 +8,12 @@ interface Props {
   id?: string;
 }
 
-/** Outline "Start journey" CTA: smooth-scrolls to Forex frame 0; href is the no-JS fallback. */
+/** Outline "Start journey" CTA: smooth-scrolls to Crypto frame 0; href is the no-JS fallback. */
 export function StartJourneyLink({ id }: Props): React.ReactElement {
   return (
     <Button
       as="a"
-      href="#forex-sequence"
+      href="#crypto-sequence"
       size="lg"
       variant="outline"
       id={id}

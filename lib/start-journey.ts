@@ -1,19 +1,26 @@
 import { getLenis } from '@/components/providers/LenisProvider';
+import { planJourney } from '@/lib/journey-math';
 
 const easeInOutCubic = (t: number): number => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
 /**
- * Smooth-scroll to Forex frame 0. #forex-sequence has marginTop -100vh, so its layout top is already
- * where Forex frame 0 fully covers the Crypto sticky; we scroll to that document offset.
+ * Smooth-scroll to Crypto frame 0 (#crypto-sequence top = Crypto progress 0; frame 0 is pinned, so it is always crisp).
+ * From far below (or far above) it cuts to half a viewport above Crypto and glides in, instead of rewinding the page.
  */
 export function startJourney(): void {
-  const el = document.getElementById('forex-sequence');
+  const el = document.getElementById('crypto-sequence');
   if (!el) return;
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const lenis = getLenis();
   if (lenis) {
-    const top = el.getBoundingClientRect().top + window.scrollY;
-    lenis.scrollTo(top, { duration: reduced ? 0 : 1.6, easing: easeInOutCubic, lock: true });
+    const target = el.getBoundingClientRect().top + window.scrollY;
+    if (reduced) {
+      lenis.scrollTo(target, { immediate: true });
+      return;
+    }
+    const plan = planJourney(lenis.animatedScroll, target, window.innerHeight);
+    if (plan.cutTo !== null) lenis.scrollTo(plan.cutTo, { immediate: true });
+    lenis.scrollTo(target, { duration: plan.duration, easing: easeInOutCubic, lock: true });
   } else {
     el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth', block: 'start' });
   }

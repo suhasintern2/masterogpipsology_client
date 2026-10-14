@@ -206,6 +206,9 @@ export const TESTIMONIAL: Testimonial = {
 
 export const FINAL_CTA_HEADLINE = 'Education before execution.';
 
+/** Closing statement over the Intelligence video at the end of the Forex journey. Line 2 renders gold italic. */
+export const CLOSING_LINES: readonly [string, string] = ['Three markets. One discipline.', 'The opportunity is yours.'];
+
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
 export const FOOTER_COLUMNS: FooterColumn[] = [
