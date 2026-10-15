@@ -10,6 +10,7 @@ import type { VirtualScrollData } from 'lenis';
 import { addScrollGate, useLenis } from '@/components/providers/LenisProvider';
 import type { SequenceLayout } from '@/components/hooks/useFrameSequence';
 import {
+  AUTO_ADVANCE_MS,
   GLIDE_WATCHDOG_MS,
   HOLD_MIN_MS,
   KEY_ARROW_PX,
@@ -305,7 +306,7 @@ export class StepScrollController {
       this.autoTimer = null;
       if (!this.ready || this.gliding || this.blocked() || this.touch.active || stopAt(this.ys, this.y(), STOP_TOL_PX) !== k) return;
       this.glideTo(k + 1);
-    }, HOLD_MIN_MS);
+    }, AUTO_ADVANCE_MS);
   }
 
   /** Wheel and keys, entry: ease into an edge stop with Lenis's own lerp. */

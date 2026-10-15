@@ -13,7 +13,8 @@ export const STEP_EASE_IN_S = 0.4;       // smoothstep velocity ramp 0 -> STEP_F
 export const STEP_DECEL_S = 1.0;         // momentum release into every stop: v = V (1 - u)^STEP_DECEL_POW (16 frames)
 export const STEP_DECEL_POW = 2;
 export const STEP_MIN_S = 0.8;           // floor for very short steps (21-frame slab 2 = 0.84 s stays unclamped)
-export const HOLD_MIN_MS = 450;          // every landing holds at least this long; input inside it is swallowed
+export const HOLD_MIN_MS = 700;          // every landing holds at least this long (hook reading time); input inside it is swallowed
+export const AUTO_ADVANCE_MS = 450;      // autoAdvance stop (Forex O3) -> next stop after this still (video hand-off timing)
 export const STOP_TOL_PX = 2;            // "at a stop": Lenis rests on window.scrollY (device-pixel rounded)
 export const REST_SNAP_FRAMES = 0.5;     // at rest, a frame position this close to the stop index shows the stop frame exactly
 export const GESTURE_GAP_MS = 180;       // wheel silence that ends a gesture
