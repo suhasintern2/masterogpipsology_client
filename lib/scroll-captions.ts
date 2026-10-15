@@ -1,10 +1,7 @@
 // Scroll caption copy. Every string is derived from lib/content.ts (no new claims or numbers); the Crypto rail copy is CRYPTO_RAIL_LINES.
 import {
-  BRAND_NAME,
-  BRAND_TAGLINE,
   CRYPTO_RAIL_LINES,
   CURRICULUM_CHAPTERS,
-  FINAL_CTA_HEADLINE,
   MARKETS,
   NAV_LINKS,
 } from '@/lib/content';
@@ -44,8 +41,8 @@ export const CRYPTO_FLOW: CaptionFlow = {
   steps: CRYPTO_RAIL_LINES.map(([label, text], i) => ({ label, text, start: cryptoRail.steps[i].start, end: cryptoRail.steps[i].end })),
 };
 
-// Forex/Stock: driven by forexRailU(stop coordinate, frame fraction): one hold per stop (Y0, F1-F3, S1), then native scroll
-// (lib/forex-rail.ts). Rows in order: forex x4, equities x4, Programme 02 and 03, Programme 04-06, brand tagline, final CTA.
+// Forex/Stock/Opportunity: driven by forexRailU(stop coordinate), stepped end to end (lib/forex-rail.ts). Rows in order: forex x4,
+// equities x4 (kicker at S1, three rows passing), Programme 02 (S2), Programmes 03-05 (passing), Programme 06 (O1).
 const FOREX_LINES: Array<[string, string]> = [
   [forex.heading, forex.kicker],
   [forex.heading, forex.tags[0]],
@@ -60,8 +57,6 @@ const FOREX_LINES: Array<[string, string]> = [
   [chapterLabel(4), chapter(4).title],
   [chapterLabel(5), chapter(5).title],
   [chapterLabel(6), chapter(6).title],
-  [BRAND_NAME, BRAND_TAGLINE],
-  [BRAND_NAME, FINAL_CTA_HEADLINE],
 ];
 const forexRail = forexRailSpec();
 export const FOREX_FLOW: CaptionFlow = {

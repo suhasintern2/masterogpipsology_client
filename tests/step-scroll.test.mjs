@@ -287,7 +287,7 @@ test('knotFrameMap equals framePos / progressAt', () => {
 });
 
 test('chainStopIndices forex + stock', () => {
-  assert.deepEqual(chainStopIndices([FOREX_STOPS_RAW, STOCK_STOPS_RAW], UL), [0, 50, 88, 154, 217]);
+  assert.deepEqual(chainStopIndices([FOREX_STOPS_RAW, STOCK_STOPS_RAW], UL), [0, 50, 88, 154, 217, 342]);
 });
 
 test('forex/stock glide durations', () => {

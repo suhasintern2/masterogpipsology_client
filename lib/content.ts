@@ -257,6 +257,13 @@ export const STOCK_SLAB: SlabCopy = {
   body: 'Single stocks, the indices they build and the news that moves them, taught in the same live classroom. Read the chart, size the risk, plan the exit before the entry.',
   tags: ['S&P 500 • INDEX', 'NASDAQ • INDEX', 'GOLD • COMMODITY'],
 };
+/** Opportunity slab (in after the stock->opportunity cut, held at O1, out before O2). Copy unchanged from the old overlay. */
+export const OPPORTUNITY_SLAB: SlabCopy = {
+  label: 'Where it all converges',
+  title: ['This is your moment,', 'the opportunity.'],
+  body: 'Every market. Every asset class. Every edge. The complete picture of how institutional capital moves — and how you position yourself inside it.',
+  tags: ['STRUCTURE • ORDER FLOW', 'RISK • PSYCHOLOGY', 'EXECUTION • CONSISTENCY'],
+};
 /** Crypto caption rail, one [label, text] per hold (lib/crypto-slabs.ts CRYPTO_RAIL_HOLDS_S: s = 0, 0.5, 1, 2, 3). */
 export const CRYPTO_RAIL_LINES: readonly (readonly [string, string])[] = [
   ['Crypto', 'Open around the clock'],

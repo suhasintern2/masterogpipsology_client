@@ -17,7 +17,7 @@ test('windows are ordered', () => {
 test('fully shown at the stops, units settled', () => {
   const cases = [
     ['forex', 0], ['forex', 1], ['forex', 2], ['forex', 3],
-    ['stock', 4], ['stock', marketSlabX(5, 300)],
+    ['stock', 4], ['stock', 5],
   ];
   for (const [id, x] of cases) {
     const w = W[id];
@@ -37,16 +37,14 @@ test('hidden where they should be', () => {
   assert.equal(slabPart(-1, W.forex, 0, 1).opacity, 0);
   assert.equal(slabPart(3.6, W.forex, 0, 1).opacity, 0);
   assert.equal(slabPart(3.6, W.stock, 0, 1).opacity, 0);
-  assert.equal(slabPart(5, W.stock, 0, 1).opacity, 0);
+  assert.equal(slabPart(5.4, W.stock, 0, 1).opacity, 0);
 });
 
 test('marketSlabX', () => {
-  assert.equal(marketSlabX(4, 217), 4);
-  assert.ok(Math.abs(marketSlabX(4.0001, 217.01) - 4) < 1e-3);
-  assert.equal(marketSlabX(4.5, 383), 5);
-  assert.equal(marketSlabX(4.5, 575), 5);
-  assert.equal(marketSlabX(NaN, 100), -1);
-  assert.equal(marketSlabX(2, 100), 2);
+  assert.equal(marketSlabX(4), 4);
+  assert.equal(marketSlabX(5.5), 5.5);
+  assert.equal(marketSlabX(NaN), -1);
+  assert.equal(marketSlabX(2), 2);
 });
 
 test('copy unit budget', () => {

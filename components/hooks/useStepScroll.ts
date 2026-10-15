@@ -45,6 +45,11 @@ export interface StepScrollOptions {
   fps?: number;
   /** Extra last stop at a scroll offset (not a frame): Crypto = ForexFade end, Forex frame 1 opaque. Frame there is not snapped. */
   tail?: (l: Readonly<SequenceLayout>) => number;
+  /** Virtual list frames for the tail segment (last frame stop -> tail), so a glide there follows the speed rule even though no
+   *  frame moves (Forex: the video hand-off). */
+  tailFrames?: number;
+  /** ys index whose landing from a downward glide auto-glides on to the next stop after the hold (Forex: O3 -> video). */
+  autoAdvance?: number;
 }
 
 interface TouchState {
@@ -71,6 +76,8 @@ export class StepScrollController {
   private readonly map: FrameMap;
   private readonly fps: number;
   private readonly tail?: (l: Readonly<SequenceLayout>) => number;
+  private readonly tailFrames?: number;
+  private readonly autoAdvance?: number;
 
   private ys: number[] = [];
   private layout: SequenceLayout = { top: 0, height: 0, viewportH: 0 };
@@ -95,6 +102,8 @@ export class StepScrollController {
   private locked = false;
   private settleTimer: Timer = null;
   private unlockTimer: Timer = null;
+  private autoTimer: Timer = null;
+  private glideDir: 1 | -1 = 1;
 
   constructor(options: StepScrollOptions) {
     this.stops = options.stops;
@@ -102,6 +111,8 @@ export class StepScrollController {
     this.map = options.map;
     this.fps = options.fps ?? STEP_FPS;
     this.tail = options.tail;
+    this.tailFrames = options.tailFrames;
+    this.autoAdvance = options.autoAdvance;
   }
 
   // ── Public API (called by the section) ──
@@ -183,7 +194,8 @@ export class StepScrollController {
       registry.delete(this);
       if (this.settleTimer) clearTimeout(this.settleTimer);
       if (this.unlockTimer) clearTimeout(this.unlockTimer);
-      this.settleTimer = this.unlockTimer = null;
+      if (this.autoTimer) clearTimeout(this.autoTimer);
+      this.settleTimer = this.unlockTimer = this.autoTimer = null;
       if (this.locked) {
         this.locked = false;
         document.documentElement.style.overflow = '';
@@ -253,7 +265,20 @@ export class StepScrollController {
     const L = this.lenis;
     this.restStop = -1;
     this.restIdx = -1;
-    const frames = Math.abs(this.posAt(Y) - this.posAt(this.y()));
+    if (this.autoTimer) {
+      clearTimeout(this.autoTimer);
+      this.autoTimer = null;
+    }
+    const y0 = this.y();
+    let frames = Math.abs(this.posAt(Y) - this.posAt(y0));
+    const n = this.ys.length;
+    if (this.tailFrames && n > this.stops.length) {
+      const a = this.ys[n - 2];
+      const b = this.ys[n - 1];
+      const cl = (v: number): number => Math.min(b, Math.max(a, v));
+      frames += (this.tailFrames * Math.abs(cl(Y) - cl(y0))) / (b - a);
+    }
+    this.glideDir = Y >= y0 ? 1 : -1;
     if (!L || frames < 1e-3) {
       this.jump(Y); // reduced motion (no Lenis): straight to the stop
       return;
@@ -270,8 +295,17 @@ export class StepScrollController {
         this.gliding = false;
         if (Math.abs(this.y() - this.ys[k]) > STOP_TOL_PX) this.jump(this.ys[k]); // layout moved during the glide
         for (const c of registry) c.refreshRest();
+        if (this.autoAdvance === k && this.glideDir > 0) this.armAuto(k);
       },
     });
+  }
+
+  private armAuto(k: number): void {
+    this.autoTimer = setTimeout(() => {
+      this.autoTimer = null;
+      if (!this.ready || this.gliding || this.blocked() || this.touch.active || stopAt(this.ys, this.y(), STOP_TOL_PX) !== k) return;
+      this.glideTo(k + 1);
+    }, HOLD_MIN_MS);
   }
 
   /** Wheel and keys, entry: ease into an edge stop with Lenis's own lerp. */

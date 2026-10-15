@@ -1,15 +1,15 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { FOREX_SLAB, STOCK_SLAB, type SlabCopy } from '@/lib/content';
+import { FOREX_SLAB, OPPORTUNITY_SLAB, STOCK_SLAB, type SlabCopy } from '@/lib/content';
 import { MARKET_SLAB_WINDOWS } from '@/lib/market-slabs';
 import { SplitWords } from '@/components/motion/SplitWords';
 import { useSlabScrub, type SlabDriver } from '@/components/motion/useSlabScrub';
 
-const IDS = ['forex', 'stock'] as const;
+const IDS = ['forex', 'stock', 'opportunity'] as const;
 const CHIP = 'tm-u px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs';
 
-function Slab({ id, copy, motion }: { id: 'forex' | 'stock'; copy: SlabCopy; motion: 'roll' | 'track' }): React.ReactElement {
+function Slab({ id, copy, motion }: { id: 'forex' | 'stock' | 'opportunity'; copy: SlabCopy; motion: 'roll' | 'track' }): React.ReactElement {
   return (
     <div data-slab={id} className="mslab col-start-1 row-start-1 flex flex-col items-end text-right">
       <div data-part className="mslab__label flex items-center gap-2 text-xs font-mono text-[#8C6D23] uppercase tracking-widest mb-3">
@@ -58,6 +58,7 @@ export function MarketSlabs({ driverRef }: { driverRef: SlabDriver }): React.Rea
     <div ref={rootRef} className="contents">
       <Slab id="forex" copy={FOREX_SLAB} motion="roll" />
       <Slab id="stock" copy={STOCK_SLAB} motion="track" />
+      <Slab id="opportunity" copy={OPPORTUNITY_SLAB} motion="track" />
     </div>
   );
 }

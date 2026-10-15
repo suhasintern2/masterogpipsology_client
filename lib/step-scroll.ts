@@ -5,7 +5,8 @@ export const CRYPTO_STOPS_RAW: readonly number[] = [1, 112, 139, 179];
 
 /** Forex and Stock stops picked with the HUD (unique mode): raw 1-based file numbers. */
 export const FOREX_STOPS_RAW: readonly number[] = [1, 64, 111, 194];
-export const STOCK_STOPS_RAW: readonly number[] = [32];
+export const STOCK_STOPS_RAW: readonly number[] = [32, 189];
+export const OPPORTUNITY_STOPS_RAW: readonly number[] = [97, 216, 240];
 
 export const STEP_FPS = 48;              // cruise speed, list (unique) frames per second: 2x the 24 fps source motion
 export const STEP_EASE_IN_S = 0.4;       // smoothstep velocity ramp 0 -> STEP_FPS at the start of a glide (9.6 frames)

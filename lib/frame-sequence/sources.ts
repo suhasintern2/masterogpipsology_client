@@ -32,11 +32,22 @@ export const TIER_SIZE: Record<FrameTier, { w: number; h: number }> = {
 
 const pad3 = (i: number): string => String(i + 1).padStart(3, '0');
 
+/** Pre-baked dissolve of the last 12 opportunity frames into the video's first frame (scripts/make-handoff-frames.mjs). */
+export const HANDOFF_SET = 'handoff-v1';
+export const HANDOFF_RAW_FROM = 226; // 1-based opportunity raws >= this come from /frames/handoff-v1
+export const HANDOFF_POSTER = `/frames/${HANDOFF_SET}/intelligence-t0.jpg`;
+const isHandoff = (seq: SeqName, i: number): boolean => seq === 'opportunity' && i + 1 >= HANDOFF_RAW_FROM;
+
 export function jpegFrameUrl(seq: SeqName, i: number): string {
+  if (isHandoff(seq, i)) return `/frames/${HANDOFF_SET}/opportunity/1920/${pad3(i)}.jpg`;
   return `/assets/${seq}/ezgif-frame-${pad3(i)}.jpg`;
 }
 
 export function frameUrl(seq: SeqName, i: number, tier: FrameTier): string {
+  if (isHandoff(seq, i)) {
+    if (tier === 'full') return jpegFrameUrl(seq, i);
+    return `/frames/${HANDOFF_SET}/opportunity/${tier === 'portrait' ? 'p1080' : '1280'}/${pad3(i)}.webp`;
+  }
   if (tier === 'full') return jpegFrameUrl(seq, i);
   return `/frames/${FRAME_SET_VERSION}/${seq}/${tier === 'portrait' ? 'p1080' : '1280'}/${pad3(i)}.webp`;
 }
