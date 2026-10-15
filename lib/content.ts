@@ -146,7 +146,7 @@ export const AUDIT_BODY = 'Issued by Master of Pipsology';
 // ─── Curriculum ───────────────────────────────────────────────────────────────
 
 export const CURRICULUM_INTRO =
-  'Twelve weeks of live sessions, structured as six modules. Each builds directly on the last — skip one and you feel it.';
+  'Live sessions, structured as six modules. Each builds directly on the last — skip one and you feel it.';
 
 export const CURRICULUM_CHAPTERS: CurriculumChapter[] = [
   {
@@ -241,6 +241,29 @@ export const CRYPTO_SLAB_CLOSE: CryptoSlabCopy = {
   label: 'Master of Pipsology',
   title: ['Crypto is chapter one.', 'Forex comes next.'],
 };
+// ─── Forex and Stock slabs (components/sections/MarketSlabs.tsx) ────────────
+export type SlabCopy = CryptoSlabCopy;
+/** Forex slab: in during the Crypto hand-off, held at Forex stops 0-3, out during the S1 glide before the folder cut. */
+export const FOREX_SLAB: SlabCopy = {
+  label: 'Master of Pipsology · Forex',
+  title: ['Chapter two is forex.', 'The world, in pairs.'],
+  body: 'Live sessions in Mysore and Bengaluru take you through the majors as London and New York trade. Same rules as crypto: structure first, risk defined, then the trade.',
+  tags: ['EUR/USD • MAJOR', 'GBP/JPY • CROSS', 'XAU/USD • GOLD'],
+};
+/** Stock slab: in after the folder cut during the S1 glide, held at S1 and on native scroll, out before Opportunity. */
+export const STOCK_SLAB: SlabCopy = {
+  label: 'Master of Pipsology · Equities',
+  title: ['Then the equity floor.', 'One stock to the index.'],
+  body: 'Single stocks, the indices they build and the news that moves them, taught in the same live classroom. Read the chart, size the risk, plan the exit before the entry.',
+  tags: ['S&P 500 • INDEX', 'NASDAQ • INDEX', 'GOLD • COMMODITY'],
+};
+/** Opportunity slab (in after the stock->opportunity cut, held at O1, out before O2). Copy unchanged from the old overlay. */
+export const OPPORTUNITY_SLAB: SlabCopy = {
+  label: 'Where it all converges',
+  title: ['This is your moment,', 'the opportunity.'],
+  body: 'Every market. Every asset class. Every edge. The complete picture of how institutional capital moves — and how you position yourself inside it.',
+  tags: ['STRUCTURE • ORDER FLOW', 'RISK • PSYCHOLOGY', 'EXECUTION • CONSISTENCY'],
+};
 /** Crypto caption rail, one [label, text] per hold (lib/crypto-slabs.ts CRYPTO_RAIL_HOLDS_S: s = 0, 0.5, 1, 2, 3). */
 export const CRYPTO_RAIL_LINES: readonly (readonly [string, string])[] = [
   ['Crypto', 'Open around the clock'],
@@ -248,6 +271,34 @@ export const CRYPTO_RAIL_LINES: readonly (readonly [string, string])[] = [
   ['Foundations', 'Bitcoin, Ethereum, Solana'],
   ['Discipline', 'Risk first, then the trade'],
   ['Mysore · Bengaluru', 'Two cities, one standard'],
+];
+
+// ─── Hook box (components/sections/HookBox.tsx): one hook per step-scroll stop ─────
+export interface HookCopy {
+  /** Wide-tracked small-caps label (<= 32 chars). */
+  label: string;
+  /** [plain line, gold line]. */
+  title: readonly [string, string];
+  /** Frame behind the box: 'light' (cream frames, dark ink; default) or 'dark' (stock/opportunity frames, cream ink). */
+  tone?: 'light' | 'dark';
+}
+/** Crypto stops raw 1, 112, 139, 179 (lib/hook-box.ts CRYPTO_HOOK_IDS order). */
+export const CRYPTO_HOOKS: readonly HookCopy[] = [
+  { label: 'Master of Pipsology · Crypto', title: ['Learn the market', 'that never sleeps.'] },
+  { label: 'The MOP method', title: ['Structure first.', 'Risk defined.'] },
+  { label: 'Live · Mysore & Bengaluru', title: ['From the first chart', 'to the final call.'] },
+  { label: 'Master of Pipsology', title: ['Crypto is chapter one.', 'Forex comes next.'] },
+];
+/** Forex chain stops Y0, F1-F3, S1, S2, O1, O2 (lib/hook-box.ts MARKET_HOOK_IDS order). O3/V: CLOSING_LINES on the video. */
+export const MARKET_HOOKS: readonly HookCopy[] = [
+  { label: 'Master of Pipsology · Forex', title: ['Chapter two is forex.', 'The world, in pairs.'] },
+  { label: 'Forex · Major pairs', title: ['Every pair is', 'two economies.'] },
+  { label: 'Forex · London & NY sessions', title: ['Timing is a skill.', 'Sessions, taught live.'] },
+  { label: 'Forex · Interbank flow', title: ['Follow the money', 'behind the move.'] },
+  { label: 'Master of Pipsology · Equities', title: ['Then the equity floor.', 'One stock to the index.'], tone: 'dark' },
+  { label: 'Equities · Indices & earnings', title: ['Bull or bear,', 'the plan comes first.'], tone: 'dark' },
+  { label: 'Where it all converges', title: ['This is your moment,', 'the opportunity.'], tone: 'dark' },
+  { label: 'Master of Pipsology', title: ['Education before', 'execution.'], tone: 'dark' },
 ];
 
 // ─── Footer ───────────────────────────────────────────────────────────────────

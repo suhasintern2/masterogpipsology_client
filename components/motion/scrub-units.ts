@@ -25,7 +25,7 @@ export function invalidateUnits(list: ScrubUnit[]): void { for (const u of list)
 const st: UnitStyle = { opacity: 0, y: 0, rot: 0, x: 0, scale: 1 };
 /** Writes one unit (cached; transform + opacity only). Returns its opacity. Reduced motion: call with (1, 0). */
 export function writeUnit(u: ScrubUnit, vin: number, vout: number): number {
-  unitStyle(u.kind, vin, vout, st);
+  unitStyle(u.kind, vin, vout, st, u.kind === 'track' ? u.unit - (u.units - 1) / 2 : 0);
   const t = unitTransform(u.kind, st, u.dir);
   const o = st.opacity.toFixed(3);
   if (t !== u.t) { u.t = t; u.el.style.transform = t; }

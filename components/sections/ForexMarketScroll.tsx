@@ -1,12 +1,17 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
+import { useStepScroll, type StepScrollOptions } from '@/components/hooks/useStepScroll';
 import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
 import { DepthStage } from '@/components/sections/DepthStage';
-import { ScrollCaptions, type CaptionDriver } from '@/components/sections/ScrollCaptions';
-import { FOREX_FLOW } from '@/lib/scroll-captions';
-import { RevealText } from '@/components/motion/RevealText';
+import { HookBox } from '@/components/sections/HookBox';
+import type { SlabDriver } from '@/components/motion/useSlabScrub';
+import { MARKET_HOOK_IDS, MARKET_HOOK_WINDOWS } from '@/lib/hook-box';
+import { MARKET_HOOKS } from '@/lib/content';
+import { marketSlabX } from '@/lib/market-slabs';
+import { linearFrameMap } from '@/lib/step-scroll';
+import { FOREX_CHAIN_STOPS } from '@/lib/forex-rail';
 import {
   buildFrameSet,
   warmIndices,
@@ -15,6 +20,7 @@ import {
   FOREX_OVERLAP_VH,
   UNIQUE_LOCAL,
   UNIQUE_PER_SEQ,
+  HANDOFF_POSTER,
   type FrameSet,
   type FrameTier,
 } from '@/lib/frame-sequence/sources';
@@ -46,7 +52,8 @@ const XFADE_END   = at(154);
 const SETTLE_END  = at(266);
 const REVEAL_ON   = at(266);
 const REVEAL_OFF  = at(210);
-const VIDEO_ARM_FRAME = 2 * PER + PER / 2;        // 480 = mid Opportunity, latest arm point
+const HANDOFF_TAIL_FRAMES = 72;                   // virtual list frames for the V glide: 2.37 s at the same speed rule
+const VIDEO_ARM_FRAME = 342;                      // S2: the video preloads about 6 s of glides before O3
 
 // ── Sequence descriptor ───────────────────────────────────────────────────────────────
 type SeqName = 'forex' | 'stock' | 'opportunity';
@@ -75,20 +82,28 @@ function resolveSeq(globalIdx: number): { seq: SeqInfo; localIdx: number } {
 
 const urlsFor = (tier: FrameTier): FrameSet =>
   buildFrameSet(['forex', 'stock_market', 'opportunity'], tier, FRAMES_PER_SEQ, UNIQUE_LOCAL);
-const PINNED = [0, TOTAL_FRAMES - 1] as const;
+const FOREX_MAP = linearFrameMap(TOTAL_FRAMES, FRAME_SCROLL_PORTION);
+// Stops: forex 1, 64, 111, 194, stock 32, 189, opportunity 97, 216, 240 (chain 0..575). Stop 0 = Y0, shared with Crypto's slab 4 landing.
+const FOREX_STEP: StepScrollOptions = {
+  stops: FOREX_CHAIN_STOPS,
+  total: TOTAL_FRAMES,
+  map: FOREX_MAP,
+  tail: (l) => l.top + REVEAL_ON * (l.height - l.viewportH), // V: video settled, closing lines in
+  tailFrames: HANDOFF_TAIL_FRAMES,                           // 72 -> 2.37 s at the same speed rule
+  autoAdvance: FOREX_CHAIN_STOPS.length - 1,                 // O3 (last frame) -> V after the 0.45 s hold
+};
+const PINNED: readonly number[] = [...FOREX_CHAIN_STOPS, TOTAL_FRAMES - 1]; // landing frames fetched first, never evicted
 const FOREX_WARM = warmIndices(PER);
 // Tilt reaches exactly 0 before the doorway dissolve starts, so the last frame matches the video lock.
 const TILT_EASE = [at(-140), at(0)] as const;
-// Fractional: the engine blends the two neighbouring frames. Past the frame range it is exactly the last frame.
-const frameForProgress = (p: number, total: number): number =>
-  p < FRAME_SCROLL_PORTION
-    ? Math.min(total - 1, Math.max(0, (p / FRAME_SCROLL_PORTION) * (total - 1)))
-    : total - 1;
 // Folder joins (forex -> stock_market -> opportunity) are separate shots: never cross-blend them.
 const FOLDER_CUTS = [PER - 1, 2 * PER - 1] as const;
 
 // ── Component ────────────────────────────────────────────────────────────────
 export function ForexMarketScroll(): React.ReactElement {
+  const step = useStepScroll(FOREX_STEP);
+  // Fractional: the engine blends the two neighbouring frames; at rest on a stop it is exactly the stop frame.
+  const frameForProgress = useCallback((p: number): number => step.frameFor(FOREX_MAP.pos(p)), [step]);
   // Transition layers
   const heroContentRef  = useRef<HTMLDivElement>(null);
   const hudContainerRef = useRef<HTMLDivElement>(null);
@@ -101,7 +116,7 @@ export function ForexMarketScroll(): React.ReactElement {
   const revealedRef = useRef(false);
   const reducedRef  = useRef(false);
   const progressRef = useRef(0);
-  const captionRef: CaptionDriver = useRef(null);
+  const slabRef: SlabDriver = useRef(null);
   const shadeElRef  = useRef<HTMLElement | null>(null);
   const geomRef     = useRef<{ native: HRect; lock: HRect } | null>(null);
 
@@ -110,10 +125,6 @@ export function ForexMarketScroll(): React.ReactElement {
   const hudFrameRef    = useRef<HTMLSpanElement>(null);
   const hudTotalRef    = useRef<HTMLSpanElement>(null);
   const hudProgressRef = useRef<HTMLDivElement>(null);
-
-  const forexOverlayRef       = useRef<HTMLDivElement>(null);
-  const stockOverlayRef       = useRef<HTMLDivElement>(null);
-  const opportunityOverlayRef = useRef<HTMLDivElement>(null);
 
   // Last written value per DOM property: every write is skipped unless it changed.
   const last = useRef<Record<string, string>>({});
@@ -181,12 +192,11 @@ export function ForexMarketScroll(): React.ReactElement {
     }
   };
 
-  const onUpdate = ({ progress, frame }: FrameSequenceUpdate): void => {
+  const onUpdate = ({ progress, frame, scroll }: FrameSequenceUpdate): void => {
     progressRef.current = progress;
-    captionRef.current?.(Math.min(1, progress / FRAME_SCROLL_PORTION));
+    const s = step.coord(scroll);
     const { seq, localIdx } = resolveSeq(frame);
     const rawLocal = UNIQUE_LOCAL[localIdx];
-    const globalIdx = seq.rawStart + rawLocal;
 
     // ── HUD text ──────────────────────────────────────────────────────────
     put('hudFrame', String(rawLocal + 1).padStart(3, '0'), (v) => { if (hudFrameRef.current) hudFrameRef.current.textContent = v; });
@@ -195,40 +205,13 @@ export function ForexMarketScroll(): React.ReactElement {
     const hp = rawLocal / (FRAMES_PER_SEQ - 1);
     put('hudScale', hp.toFixed(3), (v) => { if (hudProgressRef.current) hudProgressRef.current.style.transform = `scaleX(${v})`; });
 
-    // ── Overlay opacities (deterministic from global frame) ───────────────
-    let forexOp = 0;
-    let stockOp = 0;
-    let oppOp   = 0;
-
-    if (globalIdx < 240) {
-      forexOp = globalIdx > 215 ? Math.max(0, 1 - (globalIdx - 215) / 24) : 1;
-    } else if (globalIdx < 480) {
-      if (globalIdx < 265) {
-        stockOp = (globalIdx - 240) / 25;
-      } else if (globalIdx > 455) {
-        stockOp = Math.max(0, 1 - (globalIdx - 455) / 24);
-      } else {
-        stockOp = 1;
-      }
-    } else {
-      if (globalIdx < 505) {
-        oppOp = (globalIdx - 480) / 25;
-      } else if (globalIdx > 660) {
-        oppOp = Math.max(0, 1 - (globalIdx - 660) / 45);
-      } else {
-        oppOp = 1;
-      }
-    }
-
     // Fade entire HUD out cleanly as doorway frame settles
     let hudMasterOp = 1;
     if (progress > HUD_FADE_START) {
       hudMasterOp = Math.max(0, 1 - (progress - HUD_FADE_START) / HUD_FADE_LEN);
     }
 
-    put('forexOp', (forexOp * hudMasterOp).toFixed(3), (v) => { if (forexOverlayRef.current) forexOverlayRef.current.style.opacity = v; });
-    put('stockOp', (stockOp * hudMasterOp).toFixed(3), (v) => { if (stockOverlayRef.current) stockOverlayRef.current.style.opacity = v; });
-    put('oppOp', (oppOp * hudMasterOp).toFixed(3), (v) => { if (opportunityOverlayRef.current) opportunityOverlayRef.current.style.opacity = v; });
+    slabRef.current?.(marketSlabX(s));
     put('hudOp', hudMasterOp.toFixed(3), (v) => { if (hudContainerRef.current) hudContainerRef.current.style.opacity = v; });
 
     // ── Doorway-to-video dissolve (opacity only), settle (transform), reveal ──
@@ -237,6 +220,7 @@ export function ForexMarketScroll(): React.ReactElement {
     if (canvas && heroContent) {
       const e = smoothstep01(XFADE_START, XFADE_END, progress);
       put('opacity', (1 - e).toFixed(3), (v) => { canvas.style.opacity = v; });
+      put('cvis', e >= 1 ? 'hidden' : 'visible', (v) => { canvas.style.visibility = v; });
       put('vis', progress >= FRAME_SCROLL_PORTION ? 'visible' : 'hidden', (v) => { heroContent.style.visibility = v; });
     }
     applySettle(progress);
@@ -259,10 +243,10 @@ export function ForexMarketScroll(): React.ReactElement {
           if (videoStateRef.current !== 'play') { video.pause(); video.currentTime = 0; }
         }).catch(() => {});
       }
-      if (progress >= XFADE_END && !reducedRef.current) setVideoState('play');
-      else if (progress < XFADE_END) {
+      if (progress >= XFADE_START && !reducedRef.current) setVideoState('play');
+      else if (progress < XFADE_START) {
         setVideoState('pause');
-        if (progress < XFADE_START - 0.01 && video.currentTime !== 0) video.currentTime = 0; // canvas opaque: invisible reset
+        if (video.currentTime !== 0) video.currentTime = 0; // canvas opaque below XFADE_START: invisible reset
       }
     }
   };
@@ -281,6 +265,7 @@ export function ForexMarketScroll(): React.ReactElement {
     onAllFetched: () => { framesFetchedRef.current = true; },
     background: '#050505',
     prefetchMargin: '400% 0px 400% 0px',
+    onLayout: step.onLayout,
     onUpdate,
     onActiveChange,
   });
@@ -315,7 +300,7 @@ export function ForexMarketScroll(): React.ReactElement {
           className="absolute inset-0 z-0"
           style={{ pointerEvents: 'none', visibility: 'hidden' }}
         >
-          <IntelligenceHero embedded revealed={revealed} autoPlayVideo={false} videoPreload="none" />
+          <IntelligenceHero embedded revealed={revealed} autoPlayVideo={false} videoPreload="none" poster={HANDOFF_POSTER} />
         </div>
 
         {/* Layer 1: Single canvas – drawing surface for the 720 cinematic frames */}
@@ -341,94 +326,12 @@ export function ForexMarketScroll(): React.ReactElement {
           {/* Overlay panels – stacked in a single grid cell to prevent layout shift */}
           <div className="grid grid-cols-1 justify-items-end text-right max-w-xl self-end">
 
-            {/* Forex overlay */}
-            <div
-              ref={forexOverlayRef}
-              className="col-start-1 row-start-1 flex flex-col items-end text-right"
-              style={{ opacity: 1, willChange: 'opacity' }}
-            >
-              <div className="flex items-center gap-2 text-xs font-mono text-[#8C6D23] uppercase tracking-widest mb-3">
-                <span>The Global Reserve Market</span>
-                <span className="w-6 h-px bg-[#D4AF37]" />
-              </div>
-              <RevealText as="h2" mode="lines" trigger="scroll"
-                className="font-display font-medium leading-[1.08] tracking-tight text-[#0E0F14] text-3xl sm:text-4xl md:text-5xl lg:text-[3.6rem]"
-                style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-h2)', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
-              >
-                And now, <br className="hidden sm:inline" />
-                the global reserve, <br />
-                <span className="italic font-normal text-[#B38728]">pure forex.</span>
-              </RevealText>
-              <p className="mt-4 md:mt-6 text-sm md:text-base font-body text-[#524C42] leading-relaxed max-w-md">
-                The foreign exchange market moves $7.5 trillion a day. Where central banks, sovereign wealth funds, and interbank algorithms dictate institutional order flow.
-              </p>
-              <div className="mt-6 flex flex-wrap justify-end gap-2.5">
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">EUR/USD &bull; MAJOR</span>
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">GBP/JPY &bull; CROSS</span>
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">XAU/USD &bull; GOLD</span>
-              </div>
-            </div>
-
-            {/* Stock Market overlay */}
-            <div
-              ref={stockOverlayRef}
-              className="col-start-1 row-start-1 flex flex-col items-end text-right"
-              style={{ opacity: 0, willChange: 'opacity' }}
-            >
-              <div className="flex items-center gap-2 text-xs font-mono text-[#8C6D23] uppercase tracking-widest mb-3">
-                <span>The Equity Arena</span>
-                <span className="w-6 h-px bg-[#D4AF37]" />
-              </div>
-              <RevealText as="h2" mode="lines" trigger="scroll"
-                className="font-display font-medium leading-[1.08] tracking-tight text-[#0E0F14] text-3xl sm:text-4xl md:text-5xl lg:text-[3.6rem]"
-                style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-h2)', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
-              >
-                And then, <br className="hidden sm:inline" />
-                the market floor, <br />
-                <span className="italic font-normal text-[#B38728]">pure stocks.</span>
-              </RevealText>
-              <p className="mt-4 md:mt-6 text-sm md:text-base font-body text-[#524C42] leading-relaxed max-w-md">
-                Equities, indices, and the bull&ndash;bear cycle. Where institutional block orders, earnings catalysts, and central bank policy converge into price action.
-              </p>
-              <div className="mt-6 flex flex-wrap justify-end gap-2.5">
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">S&amp;P 500 &bull; INDEX</span>
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">NASDAQ &bull; INDEX</span>
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">GOLD &bull; COMMODITY</span>
-              </div>
-            </div>
-
-            {/* Opportunity overlay */}
-            <div
-              ref={opportunityOverlayRef}
-              className="col-start-1 row-start-1 flex flex-col items-end text-right"
-              style={{ opacity: 0, willChange: 'opacity' }}
-            >
-              <div className="flex items-center gap-2 text-xs font-mono text-[#8C6D23] uppercase tracking-widest mb-3">
-                <span>Where It All Converges</span>
-                <span className="w-6 h-px bg-[#D4AF37]" />
-              </div>
-              <RevealText as="h2" mode="lines" trigger="scroll"
-                className="font-display font-medium leading-[1.08] tracking-tight text-[#0E0F14] text-3xl sm:text-4xl md:text-5xl lg:text-[3.6rem]"
-                style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-h2)', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
-              >
-                This is <br className="hidden sm:inline" />
-                your moment, <br />
-                <span className="italic font-normal text-[#B38728]">the opportunity.</span>
-              </RevealText>
-              <p className="mt-4 md:mt-6 text-sm md:text-base font-body text-[#524C42] leading-relaxed max-w-md">
-                Every market. Every asset class. Every edge. The complete picture of how institutional capital moves — and how you position yourself inside it.
-              </p>
-              <div className="mt-6 flex flex-wrap justify-end gap-2.5">
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">STRUCTURE &bull; ORDER FLOW</span>
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">RISK &bull; PSYCHOLOGY</span>
-                <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">EXECUTION &bull; CONSISTENCY</span>
-              </div>
-            </div>
+            {/* Hook box: one hook per stop (Y0, F1-F3, S1, S2, O1, O2), ticker roll, fades with the HUD before the video */}
+            <HookBox variant="market" ids={MARKET_HOOK_IDS} windows={MARKET_HOOK_WINDOWS} hooks={MARKET_HOOKS} driverRef={slabRef} />
 
           </div>
 
         </div>
-        <ScrollCaptions flow={FOREX_FLOW} driverRef={captionRef} />
       </div>
     </section>
   );

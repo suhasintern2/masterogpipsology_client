@@ -12,9 +12,12 @@ export function IntelligenceHero({
   videoPreload = 'auto',
   embedded = false,
   revealed = false,
+  poster,
 }: {
   autoPlayVideo?: boolean;
   videoPreload?: 'auto' | 'metadata' | 'none';
+  /** Poster image shown until the video has decoded (embedded hand-off: the video's own frame 0). */
+  poster?: string;
   /** Rendered inside ForexMarketScroll's sticky (geometry and video are driven from there). */
   embedded?: boolean;
   /** Embedded only: show the text. */
@@ -79,13 +82,14 @@ export function IntelligenceHero({
           loop
           playsInline
           preload={videoPreload}
+          poster={poster}
           aria-hidden="true"
         >
+          <source src="/intelligence-layer.mp4" type="video/mp4" />
           <source
             src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260808_112712_da9d53df-6d27-4b12-bdf6-aa9dc2622bdf.mp4"
             type="video/mp4"
           />
-          <source src="/intelligence-layer.mp4" type="video/mp4" />
         </video>
         {embedded && <div className={styles.plateShade} data-ih-shade="" aria-hidden="true" />}
       </div>

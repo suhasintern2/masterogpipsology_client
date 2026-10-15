@@ -5,11 +5,11 @@ import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/u
 import { useStepScroll, type StepScrollOptions } from '@/components/hooks/useStepScroll';
 import { loadProgress } from '@/lib/load-progress';
 import { DepthStage } from '@/components/sections/DepthStage';
-import { ScrollCaptions, type CaptionDriver } from '@/components/sections/ScrollCaptions';
-import { CryptoSlabs, type SlabDriver } from '@/components/sections/CryptoSlabs';
-import { CRYPTO_FLOW } from '@/lib/scroll-captions';
-import { CRYPTO_STOPS_RAW, knotProgress, framePos, stopListIndex, handoffEndY } from '@/lib/step-scroll';
-import { railU } from '@/lib/crypto-slabs';
+import { HookBox } from '@/components/sections/HookBox';
+import type { SlabDriver } from '@/components/motion/useSlabScrub';
+import { CRYPTO_HOOK_IDS, CRYPTO_HOOK_WINDOWS } from '@/lib/hook-box';
+import { CRYPTO_HOOKS } from '@/lib/content';
+import { CRYPTO_STOPS_RAW, knotFrameMap, knotProgress, framePos, stopListIndex, handoffEndY } from '@/lib/step-scroll';
 import {
   buildFrameSet,
   warmFirstFrame,
@@ -32,7 +32,7 @@ const CRYPTO_KNOT_IDX = CRYPTO_STOP_INDICES[CRYPTO_STOP_INDICES.length - 1]; // 
 // raw 179 is shown exactly where ForexFade starts (Crypto top + 250vh); raw 180-240 keep playing under the fade.
 const CRYPTO_KNOT_P = knotProgress(SEQ_SCROLL_VH, FOREX_OVERLAP_VH); // 5/7
 const CRYPTO_STEP: StepScrollOptions = {
-  stops: CRYPTO_STOP_INDICES, total: TOTAL_FRAMES, knotP: CRYPTO_KNOT_P,
+  stops: CRYPTO_STOP_INDICES, total: TOTAL_FRAMES, map: knotFrameMap(TOTAL_FRAMES, CRYPTO_KNOT_IDX, CRYPTO_KNOT_P),
   tail: (l) => handoffEndY(l.top, l.height, SEQ_SCROLL_VH, FOREX_OVERLAP_VH), // slab 4: 179 -> Forex frame 1 (fade complete)
 };
 // Every landing frame (and the last frame) fetched first and never evicted.
@@ -50,7 +50,6 @@ export function CryptoMarketScroll(): React.ReactElement {
   const hudProgressRef = useRef<HTMLDivElement>(null);
   const lastHud = useRef({ frame: -1, pct: -1 });
   const progressRef = useRef(0);
-  const captionRef: CaptionDriver = useRef(null);
   const slabRef: SlabDriver = useRef(null);
 
   const step = useStepScroll(CRYPTO_STEP);
@@ -64,7 +63,6 @@ export function CryptoMarketScroll(): React.ReactElement {
     (u: FrameSequenceUpdate): void => {
       progressRef.current = u.progress;
       const s = step.coord(u.scroll);
-      captionRef.current?.(railU(s));
       slabRef.current?.(s);
       const last = lastHud.current;
       if (u.frame !== last.frame) {
@@ -120,9 +118,8 @@ export function CryptoMarketScroll(): React.ReactElement {
           />
         </DepthStage>
 
-        {/* Slab texts – transform/opacity only, scrubbed by the stop coordinate */}
-        <CryptoSlabs driverRef={slabRef} />
-        <ScrollCaptions flow={CRYPTO_FLOW} driverRef={captionRef} variant="crypto" />
+        {/* Hook box: one hook per stop, transform/opacity only, scrubbed by the stop coordinate */}
+        <HookBox variant="crypto" ids={CRYPTO_HOOK_IDS} windows={CRYPTO_HOOK_WINDOWS} hooks={CRYPTO_HOOKS} driverRef={slabRef} />
       </div>
     </section>
   );

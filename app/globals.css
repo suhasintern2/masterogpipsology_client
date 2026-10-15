@@ -479,6 +479,8 @@ html.js .rt-pending {
   color: #D4AF37;
   opacity: 0;
   pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
   white-space: nowrap;
 }
 
@@ -734,28 +736,6 @@ html.js .rt-pending {
 .moment-frame::before { top: 6px; }
 .moment-frame::after { bottom: 6px; }
 
-/* Curriculum timeline nodes */
-.tl-dot {
-  position: relative;
-  width: 9px;
-  height: 9px;
-  border-radius: 9999px;
-  border: 1px solid rgba(212, 175, 55, 0.35);
-  background: #08080A;
-}
-.tl-gold {
-  position: absolute;
-  inset: -1px;
-  border-radius: 9999px;
-  background: #D4AF37;
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-.tl-num { color: rgba(168, 161, 150, 0.55); transition: color 0.4s ease; }
-.tl-node[data-on='true'] .tl-gold { opacity: 1; }
-.tl-node[data-on='true'] .tl-num { color: #D4AF37; }
-
 /* ─── Hallmark dial ─── */
 .hm-section { height: 220vh; }
 .hm-sticky { position: sticky; top: 0; height: 100dvh; display: grid; place-items: center; overflow: hidden; }
@@ -957,6 +937,34 @@ html.js .th-c.is-on, html.js .th--static .th-c { opacity: 1; animation: none; }
 .cslab__path i { display: block; width: 5px; height: 5px; transform: rotate(45deg);
   background: linear-gradient(135deg, #F6E3A1, #D4AF37 50%, #8C6D23); }
 
+/* ─── Forex and Stock slab texts (components/sections/MarketSlabs.tsx, lib/market-slabs.ts) ─── */
+.mslab, .wf--market { --font-mkt: var(--font-mkt-display), 'Cinzel', 'Trajan Pro', Georgia, serif; }
+.mslab { visibility: hidden; }
+.mslab [data-u], .wf--market [data-u] { opacity: 0; will-change: transform, opacity; }
+.mslab__rule { transform-origin: 0 50%; }
+.mslab__title { margin-top: .75rem; font-family: var(--font-mkt); font-weight: 500; line-height: 1.12; letter-spacing: .04em;
+  font-size: calc(var(--fs-h2) * .78); color: #0E0F14; font-synthesis: none; text-shadow: 0 1px 18px rgba(255, 255, 255, .6); }
+.mslab__title em { font-style: normal; font-weight: 600; color: #B38728; }
+.wf--market .wf__text { font-family: var(--font-mkt); font-weight: 500; font-size: 1rem; letter-spacing: .05em; font-synthesis: none; }
+@media (width >= 48rem) { .wf--market .wf__text { font-size: 1.2rem; } }
+.tm-mask--roll { overflow: visible clip; padding: 0 .02em; margin: 0 -.02em; } /* clip vertically only: decoys may be wider */
+.tm-roll { position: relative; display: inline-block; }
+.tm-roll__d { position: absolute; left: 50%; transform: translateX(-50%); } /* static: only .tm-roll (the unit) moves */
+.tm-word { display: inline-block; white-space: nowrap; }
+.tm-word > .tm-u { display: inline-block; }
+
+/* ─── Hook box (components/sections/HookBox.tsx, lib/hook-box.ts): one box per sequence, one hook per stop ─── */
+.hook { visibility: hidden; }
+.hook [data-u] { opacity: 0; will-change: transform, opacity; }
+.hook--crypto { --font-lux: var(--font-lux-display), 'Bodoni Moda', 'Bodoni 72', Didot, Georgia, serif; }
+.hook--market { --font-mkt: var(--font-mkt-display), 'Cinzel', 'Trajan Pro', Georgia, serif; }
+.hook--market .hook__label { color: #8C6D23; }
+.hook__rule { display: block; width: 1.5rem; height: 1px; background: #D4AF37; transform-origin: 0 50%; }
+/* Dark frames (stock, opportunity): cream ink, warm gold accent, dark halo. Static per hook, never animated. */
+.hook--dark .hook__label { color: #D4AF37; }
+.hook--dark .mslab__title { color: #F3EBDD; text-shadow: 0 1px 18px rgba(0, 0, 0, .55); }
+.hook--dark .mslab__title em { color: #E2C46B; }
+
 /* Slab 2: phones/portrait = top band under the nav pill; landscape >= md = top-left, clear of the ETH/SOL coins
    (lower-left), the BTC flight (x >= 35%) in frames 112-139, and the caption rail (bottom-left). */
 .cslab--teach { left: 1.25rem; right: 1.25rem; top: 5rem; }
@@ -985,3 +993,30 @@ html.js .th-c.is-on, html.js .th--static .th-c { opacity: 1; animation: none; }
   .cslab--close .cslab__label { display: none; }
   .cslab--close .cslab__title { font-size: 1.125rem; }
 }
+
+/* ─── Section letter reveals (components/motion/LetterReveal.tsx) ─── */
+.ff-cinzel   { font-family: var(--font-mkt-display), 'Cinzel', Georgia, serif; font-weight: 500; letter-spacing: .04em; line-height: 1.08; }
+.ff-bodoni   { font-family: var(--font-lux-display), 'Bodoni Moda', Georgia, serif; font-weight: 500; letter-spacing: -.01em; line-height: 1.06; }
+.ff-playfair { font-family: var(--font-playfair), 'Playfair Display', Georgia, serif; font-weight: 500; letter-spacing: -.01em; line-height: 1.06; }
+.ff-italiana { font-family: var(--font-italiana), 'Italiana', Georgia, serif; font-weight: 400; letter-spacing: .01em; line-height: 1.08; }
+
+@keyframes lr-failsafe { to { opacity: 1; } }
+html.js .lr-pending { opacity: 0; animation: lr-failsafe 0s 5.5s forwards; }
+@media (prefers-reduced-motion: reduce) { html.js .lr-pending { opacity: 1; animation: none; } }
+
+.lr .lr-w { white-space: nowrap; }
+.lr .lr-c { position: relative; }
+/* roll: SplitText wraps each char in .lr-c-mask with inline overflow:clip; clip vertically only (decoys/italics may be wider) */
+.lr--roll .lr-c-mask { overflow: visible clip !important; vertical-align: top; }
+.lr-roll-d { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; user-select: none; -webkit-user-select: none; }
+/* shimmer: gold copy of each letter (opacity only) */
+.lr-gold { position: absolute; left: 0; top: 0; color: #E8CA65; text-shadow: 0 0 16px rgba(212, 175, 55, .55);
+  opacity: 0; pointer-events: none; user-select: none; -webkit-user-select: none; white-space: nowrap; }
+/* gradient text that survives per-letter transforms (Faculty line 2) */
+.lr-grad { background-image: linear-gradient(90deg, #F5E5C9 0%, #E2BE68 50%, #FAF1DE 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+.lr.is-split .lr-grad { background-image: none; }
+.lr-grad-c { -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+
+/* TypingHeading trigger="scroll": keep letters hidden until typed even if the 9 s CSS failsafe already fired */
+html.js .th--armed .th-c:not(.is-on) { opacity: 0; animation: none; }

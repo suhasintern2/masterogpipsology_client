@@ -2,6 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CRYPTO_STOPS_RAW,
+  FOREX_STOPS_RAW,
+  STOCK_STOPS_RAW,
+  linearFrameMap,
+  knotFrameMap,
+  chainStopIndices,
   STEP_FPS,
   STEP_EASE_IN_S,
   STEP_DECEL_S,
@@ -253,4 +258,78 @@ test('stopCoord', () => {
   near(stopCoord(-5000, ys, 1000, 1000), -1);
   near(stopCoord(4000, ys, 1000, 1000), 3.5);
   near(stopCoord(9000, ys, 1000, 1000), 4);
+});
+
+import { UNIQUE_LOCAL as UL } from '../lib/frame-sequence/sources.ts';
+
+test('linearFrameMap', () => {
+  const m = linearFrameMap(576, 5 / 7);
+  assert.equal(m.pos(0), 0);
+  assert.ok(Math.abs(m.pos(5 / 7) - 575) < 1e-9);
+  assert.equal(m.pos(1), 575);
+  assert.ok(Math.abs(m.pos(5 / 14) - 287.5) < 1e-9);
+  assert.equal(m.pos(NaN), 0);
+  for (let i = 0; i < 50; i++) {
+    const p = ((5 / 7) * i) / 49;
+    assert.ok(Math.abs(m.progress(m.pos(p)) - p) < 1e-9);
+  }
+  assert.ok(Math.abs(m.progress(217) - (217 / 575) * (5 / 7)) < 1e-12);
+});
+
+test('knotFrameMap equals framePos / progressAt', () => {
+  const m = knotFrameMap(192, 142, 5 / 7);
+  for (let i = 0; i <= 20; i++) {
+    const p = i / 20;
+    assert.equal(m.pos(p), framePos(p, 192, 142, 5 / 7));
+    const q = (i / 20) * 191;
+    assert.equal(m.progress(q), progressAt(q, 192, 142, 5 / 7));
+  }
+});
+
+test('chainStopIndices forex + stock', () => {
+  assert.deepEqual(chainStopIndices([FOREX_STOPS_RAW, STOCK_STOPS_RAW], UL), [0, 50, 88, 154, 217, 342]);
+});
+
+test('forex/stock glide durations', () => {
+  const want = { 50: 1.908, 38: 1.658, 66: 2.242, 63: 2.179 };
+  for (const [d, dur] of Object.entries(want)) {
+    const p = glideProfile(Number(d));
+    assert.ok(Math.abs(p.duration - dur) < 1e-3, `${d}: ${p.duration}`);
+    assert.equal(p.v, 48);
+    assert.equal(p.tIn, 0.4);
+    assert.equal(p.tOut, 1.0);
+    assert.equal(glideEase(1, p), 1);
+    assert.equal(glideEase(0, p), 0);
+    let prev = 0;
+    for (let i = 1; i <= 200; i++) {
+      const e = glideEase(i / 200, p);
+      assert.ok(e >= prev);
+      prev = e;
+    }
+  }
+});
+
+test('decideStep foreign guard', () => {
+  const ys = [1000, 2000];
+  const base = { fresh: true, acted: null, busy: false };
+  assert.equal(decideStep(ys, 2, { ...base, y: 900, dir: 1, target: 1001, foreign: false }).kind, 'catch');
+  assert.equal(decideStep(ys, 2, { ...base, y: 900, dir: 1, target: 1001, foreign: true }).kind, 'pass');
+  assert.equal(decideStep(ys, 2, { ...base, y: 2100, dir: -1, target: 1999, foreign: false }).kind, 'catch');
+  assert.equal(decideStep(ys, 2, { ...base, y: 2100, dir: -1, target: 1999, foreign: true }).kind, 'pass');
+});
+
+test('shared boundary Y0 between Crypto and Forex controllers', () => {
+  const C = [0, 500, 800, 1200];
+  const F = [1200, 2100, 2800, 4000, 5200];
+  const at = (ys, dir, extra = {}) => decideStep(ys, 2, { y: 1200, target: 1200 + dir * 100, dir, fresh: true, acted: null, busy: false, ...extra });
+  let a = at(C, 1), b = at(F, 1);
+  assert.equal(a.kind, 'pass');
+  assert.equal(b.kind, 'glide');
+  assert.equal(b.stop, 1);
+  a = at(C, -1); b = at(F, -1);
+  assert.equal(a.kind, 'glide');
+  assert.equal(a.stop, 2);
+  assert.equal(b.kind, 'pass');
+  assert.equal(at(C, 1, { fresh: false, acted: 'consume' }).kind, 'swallow');
+  assert.equal(at(F, 1, { fresh: false, acted: 'pass' }).kind, 'pass');
 });

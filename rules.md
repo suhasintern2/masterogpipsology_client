@@ -51,7 +51,7 @@ Rulebook for anyone (human or AI) changing or deploying this site. Commit before
 
 ## 3. Content Rules
 
-- **Copy:** Don't change unless owner explicitly asks. Crypto section copy lives in `CRYPTO_SLAB_INTRO`, `CRYPTO_SLAB_TEACH`, `CRYPTO_SLAB_CLOSE`, and `CRYPTO_RAIL_LINES` in `lib/content.ts`
+- **Copy:** Don't change unless owner explicitly asks. Hook boxes (one per sequence stop, Crypto and Forex) are sourced from `CRYPTO_HOOKS` and `MARKET_HOOKS` in `lib/content.ts`. Workflow caption rails are no longer rendered. Hook text leaves over 0–0.25 of the glide away; incoming text reveals letter by letter over 0.25–1.0 of the glide into each stop, settling as the frame lands.
 - **Metrics:** No fake numbers — no hardcoded/random counters, stats, FPS readouts, or "real data" you invented. Only real data is allowed.
 - **Assets:** Never delete
 - **Social links:** Placeholders in `lib/content.ts` — verify names before launch:
@@ -70,7 +70,9 @@ Rulebook for anyone (human or AI) changing or deploying this site. Commit before
   - Display: Cormorant Garamond
   - Body: Manrope
   - Labels: Wide-tracked small caps
-  - Crypto step-scroll texts: Bodoni Moda (display), motion 'Rise and lift' (docs/plans/crypto-text-motion.md)
+  - Crypto hook box: Bodoni Moda (display), motion 'Rise and lift' per letter; text reveals letter by letter over the glide, settling at the frame landing
+  - Market hook box: Cinzel (display), motion 'Glide and ticker roll' per letter; text reveals letter by letter over the glide, settling at the frame landing
+  - Section headlines (below the sequences): per-section faces (Cinzel, Bodoni Moda, Playfair Display, Italiana, Cormorant) with letter-by-letter reveals via LetterReveal.tsx (see docs/plans/section-letter-motion.md)
 - **Hero:** Original static photo (`root hero.png` via `next/image`) + only gentle scroll zoom. No dark overlays, no 3D.
 - **Headlines:** Letter by letter with gold "execution" and light flare on its first "e"
 - **Nav chips:** Soft foggy beige-gold border-trace, then fill on hover (nothing flashy)

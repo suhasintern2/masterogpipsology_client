@@ -3,7 +3,7 @@
 import React, { useEffect, useRef } from 'react';
 import { onEveryFrame } from '@/lib/frame-loop';
 import { scrollStore } from '@/lib/scroll-store';
-import { detectFrameTier } from '@/lib/frame-sequence/sources';
+import { sessionFrameTier } from '@/lib/frame-sequence/sources';
 import { smoothstep01 } from '@/lib/frame-sequence/handoff';
 
 const MAX_TILT = 4;      // deg, hard cap
@@ -38,7 +38,7 @@ export function DepthStage({ progressRef, easeOut, zIndex, children }: DepthStag
     const sheen = sheenRef.current;
     if (!host || !wrap || !vig || !sheen) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (detectFrameTier() !== 'full') return;
+    if (sessionFrameTier() !== 'full') return;
     const fine = window.matchMedia('(pointer: fine)').matches;
 
     let visible = false;

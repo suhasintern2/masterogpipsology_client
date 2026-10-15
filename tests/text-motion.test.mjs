@@ -153,3 +153,56 @@ test('stepTextPhase', () => {
   const end = flowState(1, spec);
   for (let j = 0; j < 5; j++) assert.equal(stepTextPhase(j, end).vout, 1);
 });
+
+import { rollDecoys } from '../lib/text-motion.ts';
+
+test('market kinds: identity when settled, hidden at the ends', () => {
+  const id = { opacity: 1, y: 0, rot: 0, x: 0, scale: 1 };
+  for (const kind of ['roll', 'track', 'glide']) {
+    assert.deepEqual(unitStyle(kind, 1, 0), id);
+    assert.deepEqual(unitStyle(kind, 1, 0, undefined, 5), id);
+    assert.deepEqual(unitStyle(kind, 1, 0, undefined, -5), id);
+    assert.equal(unitStyle(kind, 0, 0).opacity, 0);
+    assert.equal(unitStyle(kind, 1, 1).opacity, 0);
+  }
+});
+
+test('market kinds: values', () => {
+  assert.equal(unitStyle('roll', 0, 0).y, -300);
+  assert.equal(unitStyle('roll', 1, 1).x, -60);
+  assert.equal(unitStyle('track', 0, 0, undefined, 3).x, 114);
+  assert.equal(unitStyle('track', 0, 0, undefined, -3).x, -114);
+  assert.equal(unitStyle('track', 1, 0.5, undefined, 2).x, 22);
+  assert.equal(unitStyle('glide', 0, 0).x, 105);
+  assert.equal(unitStyle('glide', 1, 1).x, -105);
+});
+
+test('market kinds: unitTransform strings', () => {
+  assert.equal(unitTransform('roll', unitStyle('roll', 1, 0), 1), 'translate3d(0.00%,0.00%,0)');
+  assert.equal(unitTransform('track', unitStyle('track', 1, 0), 1), 'translate3d(0.00%,0,0)');
+  assert.equal(unitTransform('glide', unitStyle('glide', 1, 0), 1), 'translate3d(0.00%,0,0)');
+});
+
+test('rollDecoys', () => {
+  for (const ch of ['A', 'Z', 'M', 'a', 'z', 'q']) {
+    const d = rollDecoys(ch);
+    assert.deepEqual(d, rollDecoys(ch));
+    assert.equal(d.length, 3);
+    for (const g of d) {
+      assert.notEqual(g, ch);
+      assert.equal(g === g.toUpperCase(), ch === ch.toUpperCase());
+      assert.match(g, /^[A-Za-z]$/);
+    }
+  }
+  for (const ch of ['&', '7', '.', ',', '/']) for (const g of rollDecoys(ch)) assert.match(g, /^[0-9]$/);
+});
+
+test('market kinds: continuous in vin', () => {
+  for (const kind of ['roll', 'track', 'glide']) {
+    for (let v = 0; v < 1; v += 0.05) {
+      const a = unitStyle(kind, v, 0, undefined, 4);
+      const b = unitStyle(kind, v + 1e-4, 0, undefined, 4);
+      assert.ok(Math.abs(a.x - b.x) < 0.1 && Math.abs(a.y - b.y) < 0.1);
+    }
+  }
+});

@@ -107,14 +107,18 @@ export default function MagicRings({
   const isHoveredRef = useRef(false);
   const burstRef = useRef(0);
   const unavailableRef = useRef(null);
-  unavailableRef.current = onUnavailable;
 
-  propsRef.current = {
-    color, colorTwo, speed, ringCount, attenuation, lineThickness,
-    baseRadius, radiusStep, scaleRate, opacity, noiseAmount,
-    rotation, ringGap, fadeIn, fadeOut, followMouse, mouseInfluence,
-    hoverScale, parallax, clickBurst, alphaMode, maxDpr,
-  };
+  // Sync latest props into refs after each render (declared before the setup
+  // effect so the refs are populated when it runs).
+  useEffect(() => {
+    unavailableRef.current = onUnavailable;
+    propsRef.current = {
+      color, colorTwo, speed, ringCount, attenuation, lineThickness,
+      baseRadius, radiusStep, scaleRate, opacity, noiseAmount,
+      rotation, ringGap, fadeIn, fadeOut, followMouse, mouseInfluence,
+      hoverScale, parallax, clickBurst, alphaMode, maxDpr,
+    };
+  });
 
   useEffect(() => {
     const mount = mountRef.current;
@@ -262,7 +266,8 @@ export default function MagicRings({
     const io = new IntersectionObserver(
       ([entry]) => {
         isVisible = entry.isIntersecting;
-        isVisible ? tryStart() : tryStop();
+        if (isVisible) tryStart();
+        else tryStop();
       },
       { threshold: 0 }
     );
@@ -270,7 +275,8 @@ export default function MagicRings({
 
     const onVisibility = () => {
       isPageVisible = !document.hidden;
-      isPageVisible ? tryStart() : tryStop();
+      if (isPageVisible) tryStart();
+      else tryStop();
     };
     document.addEventListener('visibilitychange', onVisibility);
 

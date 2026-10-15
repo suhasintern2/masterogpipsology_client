@@ -1,5 +1,4 @@
 'use client';
-import React from 'react';
 
 // ─── Forex fades in over the end of Crypto ────────────────────────────────────
 // #forex-sequence is pulled up by 100vh (marginTop in ForexMarketScroll) so its
