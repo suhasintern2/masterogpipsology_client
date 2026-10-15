@@ -18,8 +18,11 @@ export interface HudSample {
   listTotal: number;
   ended: boolean; // sequence finished (Forex hand-off/video tail)
   file: string;
-  tier: string; // frame set chosen at engine creation
+  tier: string; // sticky frame class (+ portrait crop)
+  fallback: string; // '' | 'whole set JPEG fallback' | 'per-frame JPEG fallback'
 }
+
+const FOLDER_NAME: Record<string, string> = { crypto: 'Crypto', forex: 'Forex', stock_market: 'Stock', opportunity: 'Opportunity' };
 
 let el: HTMLPreElement | null = null;
 let enabled = false;
@@ -29,10 +32,12 @@ const active = new Set<string>();
 const marks: string[] = [];
 
 function block(s: HudSample, hint: string): string {
-  let t = `${s.seq}  ${hint}\n`;
+  let t = `${FOLDER_NAME[s.folder] ?? s.seq}  ${hint}\n`;
+  t += `frames: ${s.tier}${s.fallback ? ' / ' + s.fallback : ''}\n`;
   if (s.ended) t += `frames ended at ${s.rawTotal} - hand-off/video\n`;
   else t += `${s.folder}  frame ${s.raw} / ${s.rawTotal}\n`;
-  t += `  list ${s.listIdx} / ${s.listTotal}  pos ${s.pos.toFixed(2)}\n  scroll ${Math.round(s.progress * 100)}%  ${s.file}`;
+  const folderPct = s.listTotal > 1 ? Math.round((s.listIdx / (s.listTotal - 1)) * 100) : 0;
+  t += `  list ${s.listIdx} / ${s.listTotal}  pos ${s.pos.toFixed(2)} (chain ${s.total - 1})\n  folder ${folderPct}%  section ${Math.round(s.progress * 100)}%  ${s.file}`;
   return t;
 }
 
@@ -51,8 +56,7 @@ function render(): void {
   const parts: string[] = [];
   if (c) parts.push(block(c, f ? (c.progress >= 1 ? '[covered by Forex]' : '[on screen, Forex fading in over it]') : '[on screen]'));
   if (f) parts.push(block(f, c && c.progress < 1 ? '[fading in over Crypto]' : '[on screen]'));
-  const head = parts.length ? `frames: ${(f ?? c)?.tier}\n` : '';
-  const text = head + parts.join('\n--\n') + (marks.length ? `\nmarks (M add, C copy):\n${marks.join(', ')}` : '\nM mark, C copy marks');
+  const text = parts.join('\n--\n') + (marks.length ? `\nmarks (M add, C copy):\n${marks.join(', ')}` : '\nM mark, C copy marks');
   if (text !== lastText) {
     lastText = text;
     el.textContent = text;
@@ -91,7 +95,7 @@ export function FrameDebugHud(): React.ReactElement | null {
       const k = e.key.toLowerCase();
       const cur = primary();
       if (k === 'm' && cur) {
-        const m = `${cur.folder}:${cur.raw}`;
+        const m = `${cur.folder}:${cur.raw} [pos ${cur.pos.toFixed(2)}]`;
         marks.push(m);
         console.log('[frame mark]', m, '| all:', marks.join(', '));
         render();

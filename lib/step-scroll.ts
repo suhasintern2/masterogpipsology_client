@@ -3,6 +3,10 @@
 /** Crypto stops picked by the owner with the HUD (unique mode): raw file numbers (ezgif-frame-NNN / NNN.webp), 1-based. */
 export const CRYPTO_STOPS_RAW: readonly number[] = [1, 112, 139, 179];
 
+/** Forex and Stock stops picked with the HUD (unique mode): raw 1-based file numbers. */
+export const FOREX_STOPS_RAW: readonly number[] = [1, 64, 111, 194];
+export const STOCK_STOPS_RAW: readonly number[] = [32];
+
 export const STEP_FPS = 48;              // cruise speed, list (unique) frames per second: 2x the 24 fps source motion
 export const STEP_EASE_IN_S = 0.4;       // smoothstep velocity ramp 0 -> STEP_FPS at the start of a glide (9.6 frames)
 export const STEP_DECEL_S = 1.0;         // momentum release into every stop: v = V (1 - u)^STEP_DECEL_POW (16 frames)
@@ -68,6 +72,35 @@ export function progressAt(pos: number, total: number, knotIdx: number, knotP: n
   const ki = clamp(knotIdx, 0, last);
   if (q <= ki) return ki > 0 ? (q / ki) * kp : 0;
   return last > ki ? kp + ((q - ki) / (last - ki)) * (1 - kp) : kp;
+}
+
+/** Scroll progress <-> fractional list position for one sequence. */
+export interface FrameMap { pos: (p: number) => number; progress: (pos: number) => number }
+
+export function knotFrameMap(total: number, knotIdx: number, knotP: number): FrameMap {
+  return {
+    pos: (p) => framePos(p, total, knotIdx, knotP),
+    progress: (q) => progressAt(q, total, knotIdx, knotP),
+  };
+}
+
+/** Frames spread linearly over the first `portion` of the progress range, then held at the last frame. */
+export function linearFrameMap(total: number, portion: number): FrameMap {
+  const last = total - 1;
+  if (!(last > 0)) return { pos: () => 0, progress: () => 0 };
+  return {
+    pos: (p) => (Number.isNaN(p) ? 0 : p < portion ? clamp((p / portion) * last, 0, last) : last),
+    progress: (q) => (clamp(Number.isNaN(q) ? 0 : q, 0, last) / last) * portion,
+  };
+}
+
+/** Chain stop indices: folder f, raw r -> f * locals.length + stopListIndex(r, locals). Folders in chain order. */
+export function chainStopIndices(folders: readonly (readonly number[])[], locals: ArrayLike<number>): number[] {
+  const out: number[] = [];
+  folders.forEach((raws, f) => {
+    for (const r of raws) out.push(f * locals.length + stopListIndex(r, locals));
+  });
+  return out;
 }
 
 /** Scroll offset (px) of a stop. range = section height - viewport height (the frame hook's measured layout). */
@@ -182,6 +215,7 @@ export interface StepInput {
   dir: 1 | -1;
   fresh: boolean;                     // first event of a new gesture
   acted: 'consume' | 'pass' | null;   // what was already done for this gesture, if anything
+  foreign?: boolean;                  // y lies inside another controller's stop zone
   busy: boolean;                      // a glide is running or the landing hold (HOLD_MIN_MS) is active
 }
 
@@ -195,8 +229,8 @@ export function decideStep(ys: ArrayLike<number>, tol: number, i: StepInput): St
   if (i.busy || i.acted === 'consume') return SWALLOW;
   const first = ys[0];
   const last = ys[n - 1];
-  if (i.y < first - tol) return i.dir > 0 && i.target >= first - tol ? { kind: 'catch', stop: 0 } : PASS;
-  if (i.y > last + tol) return i.dir < 0 && i.target <= last + tol ? { kind: 'catch', stop: n - 1 } : PASS;
+  if (i.y < first - tol) return i.dir > 0 && !i.foreign && i.target >= first - tol ? { kind: 'catch', stop: 0 } : PASS;
+  if (i.y > last + tol) return i.dir < 0 && !i.foreign && i.target <= last + tol ? { kind: 'catch', stop: n - 1 } : PASS;
   if (i.acted === 'pass') return PASS; // an exit gesture still within tol of the edge stop
   const k = stopAt(ys, i.y, tol);
   if (k >= 0) {

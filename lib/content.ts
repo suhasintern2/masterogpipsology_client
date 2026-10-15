@@ -241,6 +241,22 @@ export const CRYPTO_SLAB_CLOSE: CryptoSlabCopy = {
   label: 'Master of Pipsology',
   title: ['Crypto is chapter one.', 'Forex comes next.'],
 };
+// ─── Forex and Stock slabs (components/sections/MarketSlabs.tsx) ────────────
+export type SlabCopy = CryptoSlabCopy;
+/** Forex slab: in during the Crypto hand-off, held at Forex stops 0-3, out during the S1 glide before the folder cut. */
+export const FOREX_SLAB: SlabCopy = {
+  label: 'Master of Pipsology · Forex',
+  title: ['Chapter two is forex.', 'The world, in pairs.'],
+  body: 'Live sessions in Mysore and Bengaluru take you through the majors as London and New York trade. Same rules as crypto: structure first, risk defined, then the trade.',
+  tags: ['EUR/USD • MAJOR', 'GBP/JPY • CROSS', 'XAU/USD • GOLD'],
+};
+/** Stock slab: in after the folder cut during the S1 glide, held at S1 and on native scroll, out before Opportunity. */
+export const STOCK_SLAB: SlabCopy = {
+  label: 'Master of Pipsology · Equities',
+  title: ['Then the equity floor.', 'One stock to the index.'],
+  body: 'Single stocks, the indices they build and the news that moves them, taught in the same live classroom. Read the chart, size the risk, plan the exit before the entry.',
+  tags: ['S&P 500 • INDEX', 'NASDAQ • INDEX', 'GOLD • COMMODITY'],
+};
 /** Crypto caption rail, one [label, text] per hold (lib/crypto-slabs.ts CRYPTO_RAIL_HOLDS_S: s = 0, 0.5, 1, 2, 3). */
 export const CRYPTO_RAIL_LINES: readonly (readonly [string, string])[] = [
   ['Crypto', 'Open around the clock'],

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Bodoni_Moda, Cormorant_Garamond, Manrope } from 'next/font/google';
+import { Bodoni_Moda, Cinzel, Cormorant_Garamond, Manrope } from 'next/font/google';
 import './globals.css';
 import { LenisProvider } from '@/components/providers/LenisProvider';
 import { cn } from "@/lib/utils";
@@ -92,6 +92,14 @@ export const metadata: Metadata = {
 
 // ─── Layout ───────────────────────────────────────────────────────────────────
 
+// Forex and Stock display face (MarketSlabs + Forex caption rail). Below the fold: no preload, so it never competes with the hero LCP.
+const mkt = Cinzel({
+  subsets: ['latin'],
+  variable: '--font-mkt-display',
+  display: 'swap',
+  preload: false,
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -100,7 +108,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(display.variable, sans.variable, lux.variable)}
+      className={cn(display.variable, sans.variable, lux.variable, mkt.variable)}
       suppressHydrationWarning
     >
       <head>

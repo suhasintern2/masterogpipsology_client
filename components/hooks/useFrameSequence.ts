@@ -6,7 +6,7 @@ import { onEveryFrame } from '@/lib/frame-loop';
 import { FrameSequenceEngine } from '@/lib/frame-sequence/engine';
 import { damp, sectionProgress } from '@/lib/frame-sequence/math';
 import { hudActive, hudTick } from '@/components/debug/FrameDebugHud'; // TEMP debug HUD
-import { UNIQUE_LOCAL, detectFrameTier, type FrameSet, type FrameTier } from '@/lib/frame-sequence/sources'; // UNIQUE_LOCAL: TEMP debug HUD
+import { UNIQUE_LOCAL, pinFrameClass, sessionFrameTier, type FrameSet, type FrameTier } from '@/lib/frame-sequence/sources'; // UNIQUE_LOCAL: TEMP debug HUD
 
 const HUD_TIER: Record<FrameTier, string> = { full: 'full (JPEG 1920x1080)', lite: 'lite (WebP 1280x720)', portrait: 'portrait (WebP 864x1080 centre crop)' }; // TEMP debug HUD
 
@@ -108,7 +108,7 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
     const canvas = canvasRef.current;
     if (!section || !sticky || !canvas) return;
 
-    const tier = detectFrameTier();
+    const tier = sessionFrameTier();
     const set = optsRef.current.urlsFor(tier);
     const engine = new FrameSequenceEngine({
       urls: set.urls,
@@ -122,6 +122,7 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
       fetchHorizon: optsRef.current.fetchHorizon,
       onAllFetched: () => optsRef.current.onAllFetched?.(),
       cuts: optsRef.current.cuts,
+      onWholeSetFallback: () => pinFrameClass('full'),
     });
     engine.attachCanvas(canvas);
 
@@ -168,6 +169,7 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
         ended: hudName === 'Forex' && pos >= engine.total - 1, // TEMP debug HUD
         file: engine.urlOf(shown).split('/').pop() ?? '', // TEMP debug HUD
         tier: HUD_TIER[tier], // TEMP debug HUD
+        fallback: engine.isUsingFallback() ? 'whole set JPEG fallback' : (tier !== 'full' && /\.jpg$/.test(engine.urlOf(shown)) ? 'per-frame JPEG fallback' : ''), // TEMP debug HUD
       }; // TEMP debug HUD
     };
 

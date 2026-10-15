@@ -24,24 +24,23 @@ import {
   createWheelGesture,
   decideStep,
   feedWheel,
-  framePos,
   glideEase,
   glideProfile,
   nearestStop,
   sectionProgressOf,
   stopAt,
   stopCoord,
-  stopScrollY,
+  type FrameMap,
   type StepAction,
 } from '@/lib/step-scroll';
 
 export interface StepScrollOptions {
-  /** Stop list indices, ascending (Crypto [0, 89, 110, 142]). The last stop is the knot (see framePos). */
+  /** Stop list indices, ascending (Crypto [0, 89, 110, 142]; Forex chain [0, 50, 88, 154, 217]). */
   stops: readonly number[];
   /** Frame list length (Crypto 192). */
   total: number;
-  /** Progress at which the last stop is shown (Crypto 5/7 = ForexFade start). */
-  knotP: number;
+  /** Scroll progress <-> frame position of the sequence (Crypto: knot map, Forex: linear map). */
+  map: FrameMap;
   /** Cruise speed in list frames per second. Default STEP_FPS. */
   fps?: number;
   /** Extra last stop at a scroll offset (not a frame): Crypto = ForexFade end, Forex frame 1 opaque. Frame there is not snapped. */
@@ -62,11 +61,14 @@ interface TouchState {
 
 type Timer = ReturnType<typeof setTimeout> | null;
 
+// Both step-scroll controllers live on one page and share the scroll offset Y0 (Crypto's last stop = Forex's first stop).
+const registry = new Set<StepScrollController>();
+let sharedHoldUntil = 0; // one landing hold for all controllers
+
 export class StepScrollController {
   private readonly stops: readonly number[];
   private readonly total: number;
-  private readonly knotIdx: number;
-  private readonly knotP: number;
+  private readonly map: FrameMap;
   private readonly fps: number;
   private readonly tail?: (l: Readonly<SequenceLayout>) => number;
 
@@ -78,7 +80,6 @@ export class StepScrollController {
 
   private gliding = false;
   private glideDeadline = 0;
-  private holdUntil = 0;
   private restStop = -1;
   private restIdx = -1;
 
@@ -98,8 +99,7 @@ export class StepScrollController {
   constructor(options: StepScrollOptions) {
     this.stops = options.stops;
     this.total = options.total;
-    this.knotIdx = options.stops[options.stops.length - 1] ?? 0;
-    this.knotP = options.knotP;
+    this.map = options.map;
     this.fps = options.fps ?? STEP_FPS;
     this.tail = options.tail;
   }
@@ -109,7 +109,7 @@ export class StepScrollController {
   onLayout = (l: Readonly<SequenceLayout>): void => {
     this.layout = { top: l.top, height: l.height, viewportH: l.viewportH };
     const range = l.height - l.viewportH;
-    const base = this.stops.map((i) => stopScrollY(i, this.total, this.knotIdx, this.knotP, l.top, range));
+    const base = this.stops.map((i) => l.top + this.map.progress(i) * range);
     if (this.tail && base.length > 0) {
       const t = Math.min(l.top + range, this.tail(l));
       if (t > base[base.length - 1] + STOP_TOL_PX) base.push(t);
@@ -145,6 +145,7 @@ export class StepScrollController {
 
   attach(lenis: Lenis | null): () => void {
     this.lenis = lenis;
+    registry.add(this);
     this.prevY = this.ready ? this.y() : 0;
     const offs: Array<() => void> = [];
     if (lenis) {
@@ -179,6 +180,7 @@ export class StepScrollController {
     this.refreshRest();
     return () => {
       for (const off of offs) off();
+      registry.delete(this);
       if (this.settleTimer) clearTimeout(this.settleTimer);
       if (this.unlockTimer) clearTimeout(this.unlockTimer);
       this.settleTimer = this.unlockTimer = null;
@@ -198,7 +200,7 @@ export class StepScrollController {
   }
 
   private busy(): boolean {
-    return this.gliding || performance.now() < this.holdUntil;
+    return this.gliding || performance.now() < sharedHoldUntil;
   }
 
   private inZone(y: number): boolean {
@@ -206,13 +208,14 @@ export class StepScrollController {
     return n > 0 && y >= this.ys[0] - STOP_TOL_PX && y <= this.ys[n - 1] + STOP_TOL_PX;
   }
 
+  /** true if y lies inside another registered controller's stop zone. */
+  private foreign(y: number): boolean {
+    for (const c of registry) if (c !== this && c.ready && c.inZone(y)) return true;
+    return false;
+  }
+
   private posAt(y: number): number {
-    return framePos(
-      sectionProgressOf(y, this.layout.top, this.layout.height, this.layout.viewportH),
-      this.total,
-      this.knotIdx,
-      this.knotP,
-    );
+    return this.map.pos(sectionProgressOf(y, this.layout.top, this.layout.height, this.layout.viewportH));
   }
 
   private watchdog(): void {
@@ -226,7 +229,7 @@ export class StepScrollController {
     const L = this.lenis;
     const moving = this.gliding || (L !== null && L.isScrolling !== false);
     const k = moving || !this.ready ? -1 : stopAt(this.ys, this.y(), STOP_TOL_PX);
-    if (k >= 0 && this.restStop < 0) this.holdUntil = performance.now() + HOLD_MIN_MS; // landing: brief hold
+    if (k >= 0 && this.restStop < 0) sharedHoldUntil = Math.max(sharedHoldUntil, performance.now() + HOLD_MIN_MS); // landing: brief hold
     this.restStop = k;
     this.restIdx = k >= 0 && k < this.stops.length ? this.stops[k] : -1;
   }
@@ -266,7 +269,7 @@ export class StepScrollController {
       onComplete: () => {
         this.gliding = false;
         if (Math.abs(this.y() - this.ys[k]) > STOP_TOL_PX) this.jump(this.ys[k]); // layout moved during the glide
-        this.refreshRest();
+        for (const c of registry) c.refreshRest();
       },
     });
   }
@@ -316,6 +319,7 @@ export class StepScrollController {
           dir: data.deltaY > 0 ? 1 : -1,
           fresh,
           acted: this.acted.id === id ? this.acted.kind : null,
+          foreign: this.foreign(y),
           busy: this.busy(),
         }),
         we,
@@ -362,7 +366,7 @@ export class StepScrollController {
         if (
           !this.busy() &&
           !t.committed &&
-          decideStep(this.ys, STOP_TOL_PX, { y, target: y + up, dir: up >= 0 ? 1 : -1, fresh: true, acted: null, busy: false }).kind === 'pass'
+          decideStep(this.ys, STOP_TOL_PX, { y, target: y + up, dir: up >= 0 ? 1 : -1, fresh: true, acted: null, foreign: this.foreign(y), busy: false }).kind === 'pass'
         ) {
           t.released = true; // exit at stop 0 up or stop 3 down: native scroll and momentum work
           return true;
@@ -371,7 +375,7 @@ export class StepScrollController {
       if (e.cancelable) e.preventDefault();
       if (!t.committed && !this.busy() && Math.abs(up) >= SWIPE_MIN_PX) {
         t.committed = true;
-        const a = decideStep(this.ys, STOP_TOL_PX, { y, target: y + up, dir: up > 0 ? 1 : -1, fresh: true, acted: null, busy: false });
+        const a = decideStep(this.ys, STOP_TOL_PX, { y, target: y + up, dir: up > 0 ? 1 : -1, fresh: true, acted: null, foreign: this.foreign(y), busy: false });
         if (a.kind === 'glide') this.glideTo(a.stop);
         else if (a.kind === 'catch') this.catchTo(a.stop);
         // pass = the finger reversed into an exit: do nothing
@@ -410,6 +414,7 @@ export class StepScrollController {
         dir,
         fresh: !e.repeat,
         acted: this.acted.id === id ? this.acted.kind : null,
+        foreign: this.foreign(y),
         busy: this.busy(),
       }),
       e,
@@ -430,8 +435,8 @@ export class StepScrollController {
       const last = this.ys[n - 1];
       const touchy = this.touch.active || performance.now() - this.touch.lastEnd < MOMENTUM_WINDOW_MS;
       if (touchy) {
-        if (this.prevY < first - STOP_TOL_PX && y >= first - STOP_TOL_PX) { this.touchCatch(0); return; }
-        if (this.prevY > last + STOP_TOL_PX && y <= last + STOP_TOL_PX) { this.touchCatch(n - 1); return; }
+        if (this.prevY < first - STOP_TOL_PX && y >= first - STOP_TOL_PX) { if (!this.foreign(this.prevY)) { this.touchCatch(0); return; } }
+        if (this.prevY > last + STOP_TOL_PX && y <= last + STOP_TOL_PX) { if (!this.foreign(this.prevY)) { this.touchCatch(n - 1); return; } }
       } else if (y > first + STOP_TOL_PX && y < last - STOP_TOL_PX) {
         this.armSettle();
       }

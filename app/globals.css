@@ -957,6 +957,22 @@ html.js .th-c.is-on, html.js .th--static .th-c { opacity: 1; animation: none; }
 .cslab__path i { display: block; width: 5px; height: 5px; transform: rotate(45deg);
   background: linear-gradient(135deg, #F6E3A1, #D4AF37 50%, #8C6D23); }
 
+/* ─── Forex and Stock slab texts (components/sections/MarketSlabs.tsx, lib/market-slabs.ts) ─── */
+.mslab, .wf--market { --font-mkt: var(--font-mkt-display), 'Cinzel', 'Trajan Pro', Georgia, serif; }
+.mslab { visibility: hidden; }
+.mslab [data-u], .wf--market [data-u] { opacity: 0; will-change: transform, opacity; }
+.mslab__rule { transform-origin: 0 50%; }
+.mslab__title { margin-top: .75rem; font-family: var(--font-mkt); font-weight: 500; line-height: 1.12; letter-spacing: .04em;
+  font-size: calc(var(--fs-h2) * .78); color: #0E0F14; font-synthesis: none; text-shadow: 0 1px 18px rgba(255, 255, 255, .6); }
+.mslab__title em { font-style: normal; font-weight: 600; color: #B38728; }
+.wf--market .wf__text { font-family: var(--font-mkt); font-weight: 500; font-size: 1rem; letter-spacing: .05em; font-synthesis: none; }
+@media (width >= 48rem) { .wf--market .wf__text { font-size: 1.2rem; } }
+.tm-mask--roll { overflow: visible clip; padding: 0 .02em; margin: 0 -.02em; } /* clip vertically only: decoys may be wider */
+.tm-roll { position: relative; display: inline-block; }
+.tm-roll__d { position: absolute; left: 50%; transform: translateX(-50%); } /* static: only .tm-roll (the unit) moves */
+.tm-word { display: inline-block; white-space: nowrap; }
+.tm-word > .tm-u { display: inline-block; }
+
 /* Slab 2: phones/portrait = top band under the nav pill; landscape >= md = top-left, clear of the ETH/SOL coins
    (lower-left), the BTC flight (x >= 35%) in frames 112-139, and the caption rail (bottom-left). */
 .cslab--teach { left: 1.25rem; right: 1.25rem; top: 5rem; }

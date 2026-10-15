@@ -75,8 +75,15 @@ export interface TierInput {
   deviceMemoryGB?: number;
 }
 
-export function chooseFrameTier(i: TierInput): FrameTier {
-  if (i.cssH > 0 && i.cssW / i.cssH <= PORTRAIT_MAX_ASPECT) return 'portrait';
+export type FrameClass = 'full' | 'lite';
+export const FRAME_CLASS_KEY = 'mop.frameClass.v1'; // sessionStorage key
+
+export function isPortraitViewport(cssW: number, cssH: number): boolean {
+  return cssH > 0 && cssW / cssH <= PORTRAIT_MAX_ASPECT;
+}
+
+/** Resolution class: chooseFrameTier minus the portrait branch. */
+export function chooseFrameClass(i: TierInput): FrameClass {
   if (
     i.saveData ||
     i.coarsePointer ||
@@ -90,13 +97,20 @@ export function chooseFrameTier(i: TierInput): FrameTier {
   return i.cssW * Math.min(i.dpr || 1, 2) <= LITE_MAX_BACKING_W ? 'lite' : 'full';
 }
 
-export function detectFrameTier(): FrameTier {
-  if (typeof window === 'undefined') return 'full';
+export function tierFor(cls: FrameClass, portrait: boolean): FrameTier {
+  return portrait ? 'portrait' : cls;
+}
+
+export function chooseFrameTier(i: TierInput): FrameTier {
+  return tierFor(chooseFrameClass(i), isPortraitViewport(i.cssW, i.cssH));
+}
+
+function readTierInput(): TierInput {
   const nav = navigator as Navigator & {
     deviceMemory?: number;
     connection?: { saveData?: boolean; effectiveType?: string };
   };
-  return chooseFrameTier({
+  return {
     cssW: window.innerWidth,
     cssH: window.innerHeight,
     dpr: window.devicePixelRatio || 1,
@@ -104,7 +118,58 @@ export function detectFrameTier(): FrameTier {
     saveData: nav.connection?.saveData,
     effectiveType: nav.connection?.effectiveType,
     deviceMemoryGB: nav.deviceMemory,
-  });
+  };
+}
+
+export function detectFrameTier(): FrameTier {
+  if (typeof window === 'undefined') return 'full';
+  return chooseFrameTier(readTierInput());
+}
+
+export function parseFrameClass(v: string | null | undefined): FrameClass | null {
+  return v === 'full' || v === 'lite' ? v : null;
+}
+
+/** Pure: decides the session class. override = ?frames= query value, stored = sessionStorage value. */
+export function resolveSessionClass(
+  override: string | null,
+  stored: string | null,
+  detect: () => FrameClass,
+): { cls: FrameClass; store: boolean } {
+  const o = parseFrameClass(override);
+  if (o) return { cls: o, store: true };
+  const s = parseFrameClass(stored);
+  if (s) return { cls: s, store: false };
+  return { cls: detect(), store: true };
+}
+
+let sessionClass: FrameClass | null = null;
+
+/** The frame class (full JPEG vs lite WebP) is chosen once per tab session and then never changes. */
+export function sessionFrameClass(): FrameClass {
+  if (typeof window === 'undefined') return 'full';
+  if (sessionClass) return sessionClass;
+  let override: string | null = null;
+  let stored: string | null = null;
+  try { override = new URLSearchParams(window.location.search).get('frames'); } catch { /* ignore */ }
+  try { stored = window.sessionStorage.getItem(FRAME_CLASS_KEY); } catch { /* ignore */ }
+  const r = resolveSessionClass(override, stored, () => chooseFrameClass(readTierInput()));
+  sessionClass = r.cls;
+  if (r.store) {
+    try { window.sessionStorage.setItem(FRAME_CLASS_KEY, r.cls); } catch { /* ignore */ }
+  }
+  return sessionClass;
+}
+
+export function pinFrameClass(c: FrameClass): void {
+  sessionClass = c;
+  if (typeof window === 'undefined') return;
+  try { window.sessionStorage.setItem(FRAME_CLASS_KEY, c); } catch { /* ignore */ }
+}
+
+export function sessionFrameTier(): FrameTier {
+  if (typeof window === 'undefined') return 'full';
+  return tierFor(sessionFrameClass(), isPortraitViewport(window.innerWidth, window.innerHeight));
 }
 
 /** 0..head-1 then every `stride`th frame after, sorted, unique. */
@@ -120,5 +185,5 @@ export function warmIndices(total: number, head: number = 24, stride: number = 8
 /** Starts the first frame download as early as the client chunk evaluates. Same URL the engine will request. */
 export function warmFirstFrame(seq: SeqName): void {
   if (typeof window === 'undefined') return;
-  fetch(frameUrl(seq, 0, detectFrameTier()), { cache: 'force-cache', priority: 'high' } as RequestInit).catch(() => {});
+  fetch(frameUrl(seq, 0, sessionFrameTier()), { cache: 'force-cache', priority: 'high' } as RequestInit).catch(() => {});
 }

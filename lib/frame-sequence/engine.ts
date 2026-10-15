@@ -51,6 +51,8 @@ export interface FrameSequenceEngineOptions {
   onAllFetched?: () => void;
   /** Indices i where frame i -> i+1 is a hard cut (e.g. the join of two source folders). Never blended across. */
   cuts?: readonly number[];
+  /** Called once when the whole set switches to the fallback URLs (first decode failed). */
+  onWholeSetFallback?: () => void;
 }
 
 const FETCH_IDLE = 0;
@@ -79,6 +81,7 @@ export class FrameSequenceEngine {
 
   private urls: readonly string[];
   private readonly fallbackUrls: readonly string[] | null;
+  private readonly onWholeSetFallback?: () => void;
   private readonly warm: readonly number[];
   private readonly expected: Size;
   private readonly pinned: readonly number[];
@@ -154,6 +157,7 @@ export class FrameSequenceEngine {
     this.fetchHorizon = opts.fetchHorizon ?? Infinity;
     this.onAllFetched = opts.onAllFetched;
     this.onFrameReady = opts.onFrameReady;
+    this.onWholeSetFallback = opts.onWholeSetFallback;
     this.fallbackUrls = opts.fallbackUrls && opts.fallbackUrls.length === opts.urls.length ? opts.fallbackUrls : null;
     this.warm = (opts.warm ?? []).filter((p) => p >= 0 && p < opts.urls.length);
     this.expected = opts.expectedSize ?? DEFAULT_SRC;
@@ -593,6 +597,11 @@ export class FrameSequenceEngine {
     this.src = null;
     this.liveCount = 0;
     this.markDirty();
+    this.onWholeSetFallback?.();
+  }
+
+  isUsingFallback(): boolean {
+    return this.usingFallback;
   }
 
   // ── Decode ────────────────────────────────────────────────────────────────

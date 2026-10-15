@@ -26,8 +26,8 @@ const INK = '#0B0B0B';
 interface Props {
   flow: CaptionFlow;
   driverRef: CaptionDriver;
-  /** 'crypto' adds the word-by-word rise-and-lift text motion and the Bodoni face; Forex keeps the default look. */
-  variant?: 'default' | 'crypto';
+  /** 'crypto' adds the word-by-word rise-and-lift motion and the Bodoni face; 'market' (Forex/Stock) adds ticker roll, track-in and glide in Cinzel. */
+  variant?: 'default' | 'crypto' | 'market';
 }
 
 /**
@@ -41,7 +41,7 @@ export function ScrollCaptions({ flow, driverRef, variant = 'default' }: Props):
   const nodeRefs = useRef<Array<HTMLElement | null>>([]);
   const plateRefs = useRef<Array<HTMLElement | null>>([]);
   const lineRefs = useRef<Array<HTMLElement | null>>([]);
-  const motion = variant === 'crypto';
+  const motion = variant !== 'default';
   const steps = flow.steps;
   const n = steps.length;
 
@@ -176,7 +176,7 @@ export function ScrollCaptions({ flow, driverRef, variant = 'default' }: Props):
   return (
     <div
       aria-hidden="true"
-      className={`wf ${motion ? 'wf--crypto ' : ''}absolute inset-x-0 z-40 pointer-events-none`}
+      className={`wf ${motion ? `wf--${variant} ` : ''}absolute inset-x-0 z-40 pointer-events-none`}
       style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + var(--wf-focus))', height: 0 }}
     >
       <div className="relative mx-auto w-full max-w-7xl px-5 sm:px-8 md:px-12 lg:px-16">
@@ -196,10 +196,14 @@ export function ScrollCaptions({ flow, driverRef, variant = 'default' }: Props):
                   }}
                 >
                   <div data-part className="text-[10px] md:text-[11px] font-body uppercase tracking-[0.28em] font-semibold" style={{ color: INK, fontVariant: 'small-caps' }}>
-                    {motion ? <span className="tm-mask"><span className="tm-u" data-u="rise">{c.label}</span></span> : c.label}
+                    {motion ? <span className="tm-mask"><span className="tm-u" data-u={variant === 'market' ? 'glide' : 'rise'}>{c.label}</span></span> : c.label}
                   </div>
                   <div data-part className="wf__text mt-1 font-medium leading-tight text-xl md:text-2xl" style={{ color: INK }}>
-                    {motion ? <SplitWords text={c.text} kind="tilt" /> : c.text}
+                    {variant === 'crypto'
+                      ? <SplitWords text={c.text} kind="tilt" />
+                      : variant === 'market'
+                        ? <SplitWords text={c.text} kind={c.kind ?? 'glide'} letters={c.kind === 'roll' || c.kind === 'track'} mask={c.kind !== 'track'} />
+                        : c.text}
                   </div>
                 </div>
               </div>

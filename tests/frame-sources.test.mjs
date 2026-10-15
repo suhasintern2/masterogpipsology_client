@@ -63,3 +63,30 @@ test('buildFrameSet with unique locals', () => {
   assert.equal(c.urls.length, 192);
   assert.equal(c.fallback, null);
 });
+
+import { chooseFrameClass, tierFor, resolveSessionClass, sessionFrameTier } from '../lib/frame-sequence/sources.ts';
+
+test('chooseFrameClass', () => {
+  assert.equal(chooseFrameClass({ cssW: 1920, cssH: 1080, dpr: 1 }), 'full');
+  assert.equal(chooseFrameClass({ cssW: 1366, cssH: 768, dpr: 1 }), 'lite');
+  assert.equal(chooseFrameClass({ cssW: 1440, cssH: 900, dpr: 1 }), 'full');
+  assert.equal(chooseFrameClass({ cssW: 1920, cssH: 1080, dpr: 1, coarsePointer: true }), 'lite');
+  assert.equal(chooseFrameClass({ cssW: 2560, cssH: 1440, dpr: 1, saveData: true }), 'lite');
+});
+
+test('tierFor', () => {
+  assert.equal(tierFor('lite', true), 'portrait');
+  assert.equal(tierFor('full', false), 'full');
+});
+
+test('resolveSessionClass', () => {
+  const never = () => { throw new Error('detect must not be called'); };
+  assert.deepEqual(resolveSessionClass('lite', 'full', never), { cls: 'lite', store: true });
+  assert.deepEqual(resolveSessionClass(null, 'full', never), { cls: 'full', store: false });
+  assert.deepEqual(resolveSessionClass(null, 'junk', () => 'lite'), { cls: 'lite', store: true });
+  assert.deepEqual(resolveSessionClass('bogus', null, () => 'full'), { cls: 'full', store: true });
+});
+
+test('sessionFrameTier in node (no window)', () => {
+  assert.equal(sessionFrameTier(), 'full');
+});
