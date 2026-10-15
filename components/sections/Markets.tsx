@@ -7,7 +7,7 @@ import React, { useRef } from 'react';
 
 import { MARKETS } from '@/lib/content';
 import { gsap, useGSAP } from '@/lib/gsap';
-import { FillStatement } from '@/components/motion/FillStatement';
+import { LetterReveal } from '@/components/motion/LetterReveal';
 
 export function Markets(): React.ReactElement {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -43,14 +43,15 @@ export function Markets(): React.ReactElement {
         <div className="flex-1 h-px" style={{ backgroundColor: 'var(--hairline)' }} aria-hidden="true" />
       </div>
 
-      <FillStatement
+      <LetterReveal
         as="h2"
+        variant="roll"
         id="markets-heading"
-        className="display mb-12 md:mb-16"
-        style={{ fontSize: 'var(--fs-h2)', color: 'var(--text)' }}
+        className="display ff-cinzel mb-12 md:mb-16"
+        style={{ fontSize: 'calc(var(--fs-h2) * .82)', color: 'var(--text)' }}
       >
-        {'Three markets.\nOne framework.'}
-      </FillStatement>
+        Three markets.<br />One framework.
+      </LetterReveal>
 
       <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-3 gap-6" style={{ perspective: '1200px' }}>
         {MARKETS.map((market) => (

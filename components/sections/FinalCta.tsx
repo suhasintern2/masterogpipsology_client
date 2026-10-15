@@ -5,11 +5,16 @@ import React from 'react';
 // Server Component.
 
 import { StartJourneyLink } from '@/components/nav/StartJourneyLink';
-import { RevealText } from '@/components/motion/RevealText';
-import { GoldShimmer } from '@/components/motion/GoldShimmer';
+import { TypingHeading } from '@/components/ui/TypingHeading';
+import type { TypingSegment } from '@/lib/typing';
 import { LightLeak } from '@/components/fx/LightLeak';
 import { Magnetic } from '@/components/fx/Magnetic';
 import { Hairline } from '@/components/ui/Hairline';
+
+const CTA_HEADLINE: TypingSegment[] = [
+  { text: 'Education before ' },
+  { text: 'execution.', gold: true, flare: true },
+];
 
 export function FinalCta(): React.ReactElement {
   return (
@@ -34,16 +39,14 @@ export function FinalCta(): React.ReactElement {
           {/* Brass hairline above */}
           <Hairline variant="gold" className="w-48 md:w-72" />
 
-          <RevealText
+          <TypingHeading
             as="h2"
-            mode="lines"
-            trigger="scroll"
             id="cta-heading"
-            className="display"
+            trigger="scroll"
+            segments={CTA_HEADLINE}
+            className="display font-medium"
             style={{ fontSize: 'var(--fs-h2)', color: 'var(--text)' }}
-          >
-            Education before <GoldShimmer>execution.</GoldShimmer>
-          </RevealText>
+          />
 
           <div className="flex flex-wrap justify-center items-center gap-3">
             <Magnetic>

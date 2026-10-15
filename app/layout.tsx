@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Bodoni_Moda, Cinzel, Cormorant_Garamond, Manrope } from 'next/font/google';
+import { Bodoni_Moda, Cinzel, Cormorant_Garamond, Italiana, Manrope, Playfair_Display } from 'next/font/google';
 import './globals.css';
 import { LenisProvider } from '@/components/providers/LenisProvider';
 import { cn } from "@/lib/utils";
@@ -100,6 +100,24 @@ const mkt = Cinzel({
   preload: false,
 });
 
+// Curriculum headline face. Below the fold: no preload.
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  variable: '--font-playfair',
+  display: 'swap',
+  preload: false,
+});
+
+// Results headline face (thin Didone). Below the fold: no preload.
+const italiana = Italiana({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-italiana',
+  display: 'swap',
+  preload: false,
+});
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -108,7 +126,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(display.variable, sans.variable, lux.variable, mkt.variable)}
+      className={cn(display.variable, sans.variable, lux.variable, mkt.variable, playfair.variable, italiana.variable)}
       suppressHydrationWarning
     >
       <head>

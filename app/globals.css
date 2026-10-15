@@ -981,3 +981,30 @@ html.js .th-c.is-on, html.js .th--static .th-c { opacity: 1; animation: none; }
   .cslab--close .cslab__label { display: none; }
   .cslab--close .cslab__title { font-size: 1.125rem; }
 }
+
+/* ─── Section letter reveals (components/motion/LetterReveal.tsx) ─── */
+.ff-cinzel   { font-family: var(--font-mkt-display), 'Cinzel', Georgia, serif; font-weight: 500; letter-spacing: .04em; line-height: 1.08; }
+.ff-bodoni   { font-family: var(--font-lux-display), 'Bodoni Moda', Georgia, serif; font-weight: 500; letter-spacing: -.01em; line-height: 1.06; }
+.ff-playfair { font-family: var(--font-playfair), 'Playfair Display', Georgia, serif; font-weight: 500; letter-spacing: -.01em; line-height: 1.06; }
+.ff-italiana { font-family: var(--font-italiana), 'Italiana', Georgia, serif; font-weight: 400; letter-spacing: .01em; line-height: 1.08; }
+
+@keyframes lr-failsafe { to { opacity: 1; } }
+html.js .lr-pending { opacity: 0; animation: lr-failsafe 0s 5.5s forwards; }
+@media (prefers-reduced-motion: reduce) { html.js .lr-pending { opacity: 1; animation: none; } }
+
+.lr .lr-w { white-space: nowrap; }
+.lr .lr-c { position: relative; }
+/* roll: SplitText wraps each char in .lr-c-mask with inline overflow:clip; clip vertically only (decoys/italics may be wider) */
+.lr--roll .lr-c-mask { overflow: visible clip !important; vertical-align: top; }
+.lr-roll-d { position: absolute; left: 50%; transform: translateX(-50%); pointer-events: none; user-select: none; -webkit-user-select: none; }
+/* shimmer: gold copy of each letter (opacity only) */
+.lr-gold { position: absolute; left: 0; top: 0; color: #E8CA65; text-shadow: 0 0 16px rgba(212, 175, 55, .55);
+  opacity: 0; pointer-events: none; user-select: none; -webkit-user-select: none; white-space: nowrap; }
+/* gradient text that survives per-letter transforms (Faculty line 2) */
+.lr-grad { background-image: linear-gradient(90deg, #F5E5C9 0%, #E2BE68 50%, #FAF1DE 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+.lr.is-split .lr-grad { background-image: none; }
+.lr-grad-c { -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+
+/* TypingHeading trigger="scroll": keep letters hidden until typed even if the 9 s CSS failsafe already fired */
+html.js .th--armed .th-c:not(.is-on) { opacity: 0; animation: none; }

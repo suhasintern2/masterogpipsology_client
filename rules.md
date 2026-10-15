@@ -71,6 +71,7 @@ Rulebook for anyone (human or AI) changing or deploying this site. Commit before
   - Body: Manrope
   - Labels: Wide-tracked small caps
   - Crypto step-scroll texts: Bodoni Moda (display), motion 'Rise and lift' (docs/plans/crypto-text-motion.md)
+  - Section headlines (below the sequences): per-section faces (Cinzel, Bodoni Moda, Playfair Display, Italiana, Cormorant) with letter-by-letter reveals via LetterReveal.tsx (see docs/plans/section-letter-motion.md)
 - **Hero:** Original static photo (`root hero.png` via `next/image`) + only gentle scroll zoom. No dark overlays, no 3D.
 - **Headlines:** Letter by letter with gold "execution" and light flare on its first "e"
 - **Nav chips:** Soft foggy beige-gold border-trace, then fill on hover (nothing flashy)

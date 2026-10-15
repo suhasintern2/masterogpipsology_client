@@ -3,7 +3,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TEAM_MEMBERS, type TeamMember } from '@/lib/content';
-import { RevealText } from '@/components/motion/RevealText';
+import { LetterReveal } from '@/components/motion/LetterReveal';
 import { LightLeak } from '@/components/fx/LightLeak';
 import { CurtainImage } from '@/components/fx/CurtainImage';
 import { Parallax } from '@/components/fx/Parallax';
@@ -78,18 +78,15 @@ export function LuxuryTeamGallery(): React.ReactElement {
             The Institutional Faculty
           </motion.div>
 
-          <RevealText
+          <LetterReveal
             as="h2"
-            mode="lines"
-            trigger="scroll"
-            className="display max-w-3xl mb-4"
+            variant="flip"
+            className="display ff-bodoni max-w-3xl mb-4"
             style={{ fontSize: 'var(--fs-h2)', color: '#FAF6F0' }}
           >
             Architects of the framework.<br />
-            <span className="italic bg-gradient-to-r from-[#F5E5C9] via-[#E2BE68] to-[#FAF1DE] bg-clip-text text-transparent">
-              Mentors in live execution.
-            </span>
-          </RevealText>
+            <span className="italic lr-grad">Mentors in live execution.</span>
+          </LetterReveal>
 
           <motion.p
             initial={{ opacity: 0, y: 15 }}

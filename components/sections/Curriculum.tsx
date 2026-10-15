@@ -8,7 +8,7 @@ import { CURRICULUM_CHAPTERS, CURRICULUM_INTRO } from '@/lib/content';
 import { gsap, useGSAP } from '@/lib/gsap';
 import { useDeviceTier } from '@/lib/device-tier';
 import { Hairline } from '@/components/ui/Hairline';
-import { FillStatement } from '@/components/motion/FillStatement';
+import { LetterReveal } from '@/components/motion/LetterReveal';
 
 export function Curriculum(): React.ReactElement {
   const tier = useDeviceTier();
@@ -64,14 +64,15 @@ export function Curriculum(): React.ReactElement {
       </div>
 
       <div className="flex flex-col md:flex-row md:gap-16 mb-12 md:mb-16">
-        <FillStatement
+        <LetterReveal
           as="h2"
+          variant="shimmer"
           id="curriculum-heading"
-          className="display md:w-1/2"
+          className="display ff-playfair md:w-1/2"
           style={{ fontSize: 'var(--fs-h2)', color: 'var(--text)' }}
         >
-          {'Six modules.\nOne system.'}
-        </FillStatement>
+          Six modules.<br />One system.
+        </LetterReveal>
 
         <p
           className="md:w-1/2 mt-4 md:mt-0 text-base leading-relaxed font-body self-end body-max"

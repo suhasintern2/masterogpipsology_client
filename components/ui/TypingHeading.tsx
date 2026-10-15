@@ -2,7 +2,7 @@
 
 import React, { Fragment, useMemo, useRef } from 'react';
 import clsx from 'clsx';
-import { gsap, useGSAP } from '@/lib/gsap';
+import { gsap, ScrollTrigger, useGSAP } from '@/lib/gsap';
 import { onEveryFrame } from '@/lib/frame-loop';
 import { onIntroDone } from '@/lib/intro';
 import { layoutTyping, revealCount, type TypingSegment } from '@/lib/typing';
@@ -12,6 +12,9 @@ interface TypingHeadingProps {
   as?: 'h1' | 'h2';
   speedMs?: number;
   delayMs?: number;
+  /** 'intro' starts after the intro; 'scroll' starts when the heading scrolls into view. */
+  trigger?: 'intro' | 'scroll';
+  scrollStart?: string;
   className?: string;
   style?: React.CSSProperties;
   id?: string;
@@ -24,6 +27,8 @@ export function TypingHeading({
   as = 'h1',
   speedMs = 70,
   delayMs = 350,
+  trigger = 'intro',
+  scrollStart = 'top 80%',
   className,
   style,
   id,
@@ -127,8 +132,17 @@ export function TypingHeading({
 
       measure();
       placeCaret();
-      const offIntro = onIntroDone(start);
-      const failsafe = window.setTimeout(start, 6000);
+      let offIntro = (): void => {};
+      let failsafe = 0;
+      let st: ScrollTrigger | null = null;
+      if (trigger === 'scroll') {
+        root.classList.add('th--armed');
+        st = ScrollTrigger.create({ trigger: root, start: scrollStart, once: true, onEnter: () => start() });
+        if (root.getBoundingClientRect().top < window.innerHeight * 0.8) start(); // loaded already past it
+      } else {
+        offIntro = onIntroDone(start);
+        failsafe = window.setTimeout(start, 6000);
+      }
       const ro = new ResizeObserver(() => { measure(); placeCaret(); });
       ro.observe(root);
       void document.fonts?.ready.then(() => { measure(); placeCaret(); });
@@ -136,11 +150,13 @@ export function TypingHeading({
       return () => {
         offIntro();
         clearTimeout(failsafe);
+        st?.kill();
+        root.classList.remove('th--armed');
         unsub?.();
         ro.disconnect();
       };
     },
-    { dependencies: [layout, speedMs, delayMs], revertOnUpdate: true },
+    { dependencies: [layout, speedMs, delayMs, trigger, scrollStart], revertOnUpdate: true },
   );
 
   return (

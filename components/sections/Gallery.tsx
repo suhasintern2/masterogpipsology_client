@@ -12,7 +12,7 @@ import { useRef } from 'react';
 import { gsap, useGSAP } from '@/lib/gsap';
 import { ResultsWall } from '@/components/art/ResultsWall';
 import { CertificateDisplay } from '@/components/art/CertificateDisplay';
-import { RevealText } from '@/components/motion/RevealText';
+import { LetterReveal } from '@/components/motion/LetterReveal';
 import { CurtainImage } from '@/components/fx/CurtainImage';
 
 export function Gallery(): React.ReactElement {
@@ -33,16 +33,15 @@ export function Gallery(): React.ReactElement {
         <div className="flex-1 h-px" style={{ backgroundColor: 'var(--hairline)' }} aria-hidden="true" />
       </div>
 
-      <RevealText
+      <LetterReveal
         as="h2"
-        mode="lines"
-        trigger="scroll"
+        variant="track"
         id="gallery-heading"
-        className="display mb-12 md:mb-16"
-        style={{ fontSize: 'var(--fs-h2)', color: 'var(--text)' }}
+        className="display ff-italiana mb-12 md:mb-16"
+        style={{ fontSize: 'calc(var(--fs-h2) * 1.06)', color: 'var(--text)' }}
       >
         Real results from<br />real traders.
-      </RevealText>
+      </LetterReveal>
 
       {/* Gallery frames */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">

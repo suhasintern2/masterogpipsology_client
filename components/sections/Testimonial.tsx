@@ -4,7 +4,7 @@ import React from 'react';
 // with attribution. Server Component.
 
 import { TESTIMONIAL } from '@/lib/content';
-import { RevealText } from '@/components/motion/RevealText';
+import { LetterReveal } from '@/components/motion/LetterReveal';
 import { Hairline } from '@/components/ui/Hairline';
 
 export function Testimonial(): React.ReactElement {
@@ -42,10 +42,9 @@ export function Testimonial(): React.ReactElement {
         <figure className="relative z-10">
           <Hairline variant="gold" className="mb-10" />
           <blockquote>
-            <RevealText
+            <LetterReveal
               as="h2"
-              mode="lines"
-              trigger="scroll"
+              variant="bloom"
               id="testimonial-heading"
               className="display italic mb-8"
               style={{
@@ -57,7 +56,7 @@ export function Testimonial(): React.ReactElement {
               }}
             >
               &ldquo;{TESTIMONIAL.quote}&rdquo;
-            </RevealText>
+            </LetterReveal>
           </blockquote>
 
           <figcaption className="flex items-center gap-4">
