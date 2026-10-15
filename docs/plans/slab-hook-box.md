@@ -3,6 +3,16 @@
 Planner: Opus. Coder: implement exactly this. Do not explore beyond the files named here. No Next API is touched.
 `hx` is not installed in this repo, so the decisions are recorded in section 9 of this file. Base: `main` @ `73018c2`.
 
+## Owner override (implemented)
+
+The planned overlap params (§3.2: 0.70/0.92 in, 0.80/0.94 out) and the detailed window timing in §4.1–4.2 were **not implemented** as written. Actual implementation (lib/hook-box.ts):
+- Windows are in stop coordinate, scrubbed to the frame glide.
+- Old hook leaves over 0–0.25 of each glide.
+- New hook reveals letter by letter over 0.25–1.0 and its last letter finishes exactly when frames land on the stop.
+- No hook overlaps, no early settle. Short glides just compress.
+
+---
+
 ## 0. Goal
 
 The owner asked for this:
