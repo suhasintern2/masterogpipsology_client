@@ -146,7 +146,7 @@ export const AUDIT_BODY = 'Issued by Master of Pipsology';
 // ─── Curriculum ───────────────────────────────────────────────────────────────
 
 export const CURRICULUM_INTRO =
-  'Twelve weeks of live sessions, structured as six modules. Each builds directly on the last — skip one and you feel it.';
+  'Live sessions, structured as six modules. Each builds directly on the last — skip one and you feel it.';
 
 export const CURRICULUM_CHAPTERS: CurriculumChapter[] = [
   {

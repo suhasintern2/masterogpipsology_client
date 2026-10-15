@@ -479,6 +479,8 @@ html.js .rt-pending {
   color: #D4AF37;
   opacity: 0;
   pointer-events: none;
+  user-select: none;
+  -webkit-user-select: none;
   white-space: nowrap;
 }
 
@@ -733,28 +735,6 @@ html.js .rt-pending {
 }
 .moment-frame::before { top: 6px; }
 .moment-frame::after { bottom: 6px; }
-
-/* Curriculum timeline nodes */
-.tl-dot {
-  position: relative;
-  width: 9px;
-  height: 9px;
-  border-radius: 9999px;
-  border: 1px solid rgba(212, 175, 55, 0.35);
-  background: #08080A;
-}
-.tl-gold {
-  position: absolute;
-  inset: -1px;
-  border-radius: 9999px;
-  background: #D4AF37;
-  box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
-  opacity: 0;
-  transition: opacity 0.4s ease;
-}
-.tl-num { color: rgba(168, 161, 150, 0.55); transition: color 0.4s ease; }
-.tl-node[data-on='true'] .tl-gold { opacity: 1; }
-.tl-node[data-on='true'] .tl-num { color: #D4AF37; }
 
 /* ─── Hallmark dial ─── */
 .hm-section { height: 220vh; }
