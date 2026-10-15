@@ -273,6 +273,34 @@ export const CRYPTO_RAIL_LINES: readonly (readonly [string, string])[] = [
   ['Mysore · Bengaluru', 'Two cities, one standard'],
 ];
 
+// ─── Hook box (components/sections/HookBox.tsx): one hook per step-scroll stop ─────
+export interface HookCopy {
+  /** Wide-tracked small-caps label (<= 32 chars). */
+  label: string;
+  /** [plain line, gold line]. */
+  title: readonly [string, string];
+  /** Frame behind the box: 'light' (cream frames, dark ink; default) or 'dark' (stock/opportunity frames, cream ink). */
+  tone?: 'light' | 'dark';
+}
+/** Crypto stops raw 1, 112, 139, 179 (lib/hook-box.ts CRYPTO_HOOK_IDS order). */
+export const CRYPTO_HOOKS: readonly HookCopy[] = [
+  { label: 'Master of Pipsology · Crypto', title: ['Learn the market', 'that never sleeps.'] },
+  { label: 'The MOP method', title: ['Structure first.', 'Risk defined.'] },
+  { label: 'Live · Mysore & Bengaluru', title: ['From the first chart', 'to the final call.'] },
+  { label: 'Master of Pipsology', title: ['Crypto is chapter one.', 'Forex comes next.'] },
+];
+/** Forex chain stops Y0, F1-F3, S1, S2, O1, O2 (lib/hook-box.ts MARKET_HOOK_IDS order). O3/V: CLOSING_LINES on the video. */
+export const MARKET_HOOKS: readonly HookCopy[] = [
+  { label: 'Master of Pipsology · Forex', title: ['Chapter two is forex.', 'The world, in pairs.'] },
+  { label: 'Forex · Major pairs', title: ['Every pair is', 'two economies.'] },
+  { label: 'Forex · London & NY sessions', title: ['Timing is a skill.', 'Sessions, taught live.'] },
+  { label: 'Forex · Interbank flow', title: ['Follow the money', 'behind the move.'] },
+  { label: 'Master of Pipsology · Equities', title: ['Then the equity floor.', 'One stock to the index.'], tone: 'dark' },
+  { label: 'Equities · Indices & earnings', title: ['Bull or bear,', 'the plan comes first.'], tone: 'dark' },
+  { label: 'Where it all converges', title: ['This is your moment,', 'the opportunity.'], tone: 'dark' },
+  { label: 'Master of Pipsology', title: ['Education before', 'execution.'], tone: 'dark' },
+];
+
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
 export const FOOTER_COLUMNS: FooterColumn[] = [

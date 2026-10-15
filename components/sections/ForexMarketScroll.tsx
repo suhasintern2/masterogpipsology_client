@@ -5,13 +5,13 @@ import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/u
 import { useStepScroll, type StepScrollOptions } from '@/components/hooks/useStepScroll';
 import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
 import { DepthStage } from '@/components/sections/DepthStage';
-import { ScrollCaptions, type CaptionDriver } from '@/components/sections/ScrollCaptions';
-import { FOREX_FLOW } from '@/lib/scroll-captions';
-import { MarketSlabs } from '@/components/sections/MarketSlabs';
+import { HookBox } from '@/components/sections/HookBox';
 import type { SlabDriver } from '@/components/motion/useSlabScrub';
+import { MARKET_HOOK_IDS, MARKET_HOOK_WINDOWS } from '@/lib/hook-box';
+import { MARKET_HOOKS } from '@/lib/content';
 import { marketSlabX } from '@/lib/market-slabs';
 import { linearFrameMap } from '@/lib/step-scroll';
-import { FOREX_CHAIN_STOPS, forexRailU } from '@/lib/forex-rail';
+import { FOREX_CHAIN_STOPS } from '@/lib/forex-rail';
 import {
   buildFrameSet,
   warmIndices,
@@ -116,7 +116,6 @@ export function ForexMarketScroll(): React.ReactElement {
   const revealedRef = useRef(false);
   const reducedRef  = useRef(false);
   const progressRef = useRef(0);
-  const captionRef: CaptionDriver = useRef(null);
   const slabRef: SlabDriver = useRef(null);
   const shadeElRef  = useRef<HTMLElement | null>(null);
   const geomRef     = useRef<{ native: HRect; lock: HRect } | null>(null);
@@ -196,7 +195,6 @@ export function ForexMarketScroll(): React.ReactElement {
   const onUpdate = ({ progress, frame, scroll }: FrameSequenceUpdate): void => {
     progressRef.current = progress;
     const s = step.coord(scroll);
-    captionRef.current?.(forexRailU(s));
     const { seq, localIdx } = resolveSeq(frame);
     const rawLocal = UNIQUE_LOCAL[localIdx];
 
@@ -328,13 +326,12 @@ export function ForexMarketScroll(): React.ReactElement {
           {/* Overlay panels – stacked in a single grid cell to prevent layout shift */}
           <div className="grid grid-cols-1 justify-items-end text-right max-w-xl self-end">
 
-            {/* Forex, Stock and Opportunity slab texts (ticker roll, track-in) */}
-            <MarketSlabs driverRef={slabRef} />
+            {/* Hook box: one hook per stop (Y0, F1-F3, S1, S2, O1, O2), ticker roll, fades with the HUD before the video */}
+            <HookBox variant="market" ids={MARKET_HOOK_IDS} windows={MARKET_HOOK_WINDOWS} hooks={MARKET_HOOKS} driverRef={slabRef} />
 
           </div>
 
         </div>
-        <ScrollCaptions flow={FOREX_FLOW} driverRef={captionRef} variant="market" />
       </div>
     </section>
   );
