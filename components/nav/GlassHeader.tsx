@@ -8,6 +8,7 @@ import React from 'react';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { NAV_LINKS } from '@/lib/content';
 import { MobileMenuSheet } from './MobileMenuSheet';
 import { LiquidGlassFilter } from './LiquidGlassFilter';
@@ -157,7 +158,7 @@ export function GlassHeader(): React.ReactElement {
             aria-label="Primary navigation"
           >
             {/* Logo + MASTER OF PIPSOLOGY */}
-            <a
+            <Link
               href="/"
               className="flex items-center gap-2.5 no-underline flex-shrink-0 group lg-text"
               aria-label="MASTER OF PIPSOLOGY — home"
@@ -178,7 +179,7 @@ export function GlassHeader(): React.ReactElement {
               >
                 MASTER OF PIPSOLOGY
               </span>
-            </a>
+            </Link>
 
             {/* Desktop nav links */}
             <ul ref={ulRef} className="relative hidden md:flex items-center gap-1.5 lg:gap-2.5" role="list">

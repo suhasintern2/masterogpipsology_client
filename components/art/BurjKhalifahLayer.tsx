@@ -20,7 +20,6 @@ import React from 'react';
 // Desktop: tower occupies left 38% of viewport
 // Mobile: tower stays visible, anchored left, ~55% wide, scaled down
 
-import { useRef } from 'react';
 import Image from 'next/image';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 
