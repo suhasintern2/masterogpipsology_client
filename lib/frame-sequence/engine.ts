@@ -5,20 +5,25 @@
 //   decode() : createImageBitmap(blob) with NO options (crop/resize run on Chrome's main thread, R1),
 //              into a velocity-aware, memory-budgeted, direction-biased bitmap cache shared across
 //              engines. Anything outside is close()d. Bitmaps are source-sized, so resizes never re-decode.
-//   draw()   : nearest decoded frame, cover-scaled on draw (GPU).
+//   draw()   : fractional position -> frame floor(pos) opaque with floor(pos)+1 blended over it (blendAlpha, linear by default,
+//              1/64 steps) when both are decoded and not separated by a hard cut; otherwise the nearest decoded
+//              frame. Cover-scaled on draw (GPU). Redraws only when the frame pair or alpha step changes.
 
 import {
   bitmapBudget,
   computeBackingSize,
   coverDest,
+  BLEND_LEVELS,
   decodeStride,
   decodeWindow,
   frameVelocity,
   lookahead,
   nearestAvailable,
+  planBlend,
   pickNextDecode,
   pickNextFetch,
   retryDelayMs,
+  splitBudget,
   type Size,
 } from './math';
 
@@ -40,6 +45,12 @@ export interface FrameSequenceEngineOptions {
   nearWindow?: number; // default 24
   /** Called after a frame bitmap is successfully decoded. */
   onFrameReady?: (index: number) => void;
+  /** Frames further than this from the current frame are fetched last (default Infinity). */
+  fetchHorizon?: number;
+  /** Fired once after the full fetch finishes with nothing idle or in flight. */
+  onAllFetched?: () => void;
+  /** Indices i where frame i -> i+1 is a hard cut (e.g. the join of two source folders). Never blended across. */
+  cuts?: readonly number[];
 }
 
 const FETCH_IDLE = 0;
@@ -71,11 +82,16 @@ export class FrameSequenceEngine {
   private readonly warm: readonly number[];
   private readonly expected: Size;
   private readonly pinned: readonly number[];
+  private readonly cuts: Uint8Array;
   private readonly isPinned: Uint8Array;
   private readonly background: string;
   private readonly maxFetches: number;
   private readonly maxDecodes: number;
   private readonly nearWindow: number;
+  private readonly fetchHorizon: number;
+  private readonly onAllFetched?: () => void;
+  private active = false;
+  private allFetchedFired = false;
   private readonly onFrameReady?: (index: number) => void;
   private readonly coarse: boolean;
   private readonly mem: number | undefined;
@@ -102,7 +118,10 @@ export class FrameSequenceEngine {
   private started = false;
   private dirty = true;
   private lastDrawn: ImageBitmap | null = null;
+  private lastDrawnB: ImageBitmap | null = null; // blended-over frame, null when a single frame is on screen
+  private lastQ = 0; // alpha step of lastDrawnB
   private drawnIdx = -1;
+  private pos = 0; // fractional target position
   private destroyed = false;
   private pumpQueued = false;
   private usingFallback = false;
@@ -132,6 +151,8 @@ export class FrameSequenceEngine {
     const hc = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 4 : 4;
     this.maxDecodes = opts.maxConcurrentDecodes ?? Math.min(4, Math.max(2, Math.floor(hc / 2)));
     this.nearWindow = opts.nearWindow ?? 24;
+    this.fetchHorizon = opts.fetchHorizon ?? Infinity;
+    this.onAllFetched = opts.onAllFetched;
     this.onFrameReady = opts.onFrameReady;
     this.fallbackUrls = opts.fallbackUrls && opts.fallbackUrls.length === opts.urls.length ? opts.fallbackUrls : null;
     this.warm = (opts.warm ?? []).filter((p) => p >= 0 && p < opts.urls.length);
@@ -144,6 +165,8 @@ export class FrameSequenceEngine {
       typeof navigator !== 'undefined' ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory : undefined;
 
     const n = this.total;
+    this.cuts = new Uint8Array(n);
+    for (const c of opts.cuts ?? []) if (c >= 0 && c < n - 1) this.cuts[c] = 1;
     this.isPinned = new Uint8Array(n);
     for (const p of this.pinned) this.isPinned[p] = 1;
     this.fetchState = new Uint8Array(n);
@@ -195,6 +218,14 @@ export class FrameSequenceEngine {
     enabledEngines.forEach((e) => e.markDirty());
   }
 
+  /** Active = its section is mid-scroll. Exactly one active engine gets the full decode budget. */
+  setActive(on: boolean): void {
+    if (this.destroyed || on === this.active) return;
+    this.active = on;
+    enabledEngines.forEach((e) => e.markDirty());
+    this.markDirty();
+  }
+
   markDirty(): void {
     this.dirty = true;
     this.schedulePump();
@@ -214,10 +245,11 @@ export class FrameSequenceEngine {
     this.applyCanvasSize();
   }
 
-  /** Returns the index actually shown, -1 if none. */
+  /** `frame` may be fractional (blended between its neighbours). Returns the index actually shown, -1 if none. */
   update(frame: number): number {
     if (this.destroyed || this.total === 0) return -1;
-    const f = Math.min(this.total - 1, Math.max(0, Math.round(frame)));
+    this.pos = Math.min(this.total - 1, Math.max(0, Number.isNaN(frame) ? 0 : frame));
+    const f = Math.round(this.pos);
     const now = performance.now();
     if (this.lastUpdateMs >= 0) {
       this.velocity = frameVelocity(this.velocity, f - this.current, (now - this.lastUpdateMs) / 1000);
@@ -234,13 +266,41 @@ export class FrameSequenceEngine {
       this.dirty = false;
       this.pump();
     }
+    return this.paint();
+  }
+
+  /** Paints this.pos; returns the index shown (-1 if none). Skips the draw when nothing visible changed. */
+  private paint(): number {
+    const f = Math.round(this.pos);
+    const plan = planBlend(this.pos, this.total, this.cuts);
+    if (plan.b >= 0 && this.hasBitmap[plan.a] && this.hasBitmap[plan.b]) {
+      const a = this.bitmaps[plan.a];
+      const b = this.bitmaps[plan.b];
+      if (a && b) {
+        if (a !== this.lastDrawn || b !== this.lastDrawnB || plan.q !== this.lastQ) {
+          this.draw(a, b, plan.q / BLEND_LEVELS);
+          this.lastDrawn = a;
+          this.lastDrawnB = b;
+          this.lastQ = plan.q;
+          this.drawnIdx = f;
+        }
+        return f;
+      }
+    }
+    // Single frame: the next one is not decoded (or this is a cut / end / alpha 0 or 1): nearest available.
     const shown = nearestAvailable(this.hasBitmap, f);
     if (shown >= 0) {
       const bmp = this.bitmaps[shown];
       // Never replace what is on screen with a frame that is further from the target.
-      if (bmp && bmp !== this.lastDrawn && (this.drawnIdx < 0 || Math.abs(shown - f) <= Math.abs(this.drawnIdx - f))) {
-        this.draw(bmp);
+      if (
+        bmp &&
+        (bmp !== this.lastDrawn || this.lastDrawnB !== null) &&
+        (this.drawnIdx < 0 || Math.abs(shown - f) <= Math.abs(this.drawnIdx - f))
+      ) {
+        this.draw(bmp, null, 1);
         this.lastDrawn = bmp;
+        this.lastDrawnB = null;
+        this.lastQ = 0;
         this.drawnIdx = shown;
       }
     }
@@ -264,6 +324,7 @@ export class FrameSequenceEngine {
     }
     this.blobs.fill(null);
     this.lastDrawn = null;
+    this.lastDrawnB = null;
     this.canvas = null;
     this.ctx = null;
   }
@@ -292,14 +353,10 @@ export class FrameSequenceEngine {
     this.prepareContext();
     // Redraw immediately (cover-fit from whatever is decoded) so there is no flash.
     this.lastDrawn = null;
+    this.lastDrawnB = null;
+    this.lastQ = 0;
     this.drawnIdx = -1;
-    const idx = nearestAvailable(this.hasBitmap, this.current);
-    const bmp = idx >= 0 ? this.bitmaps[idx] : null;
-    if (bmp) {
-      this.draw(bmp);
-      this.lastDrawn = bmp;
-      this.drawnIdx = idx;
-    }
+    this.paint();
   }
 
   private recomputeBudget(): void {
@@ -307,12 +364,27 @@ export class FrameSequenceEngine {
   }
 
   private effectiveBudget(): number {
-    return Math.max(16, Math.floor(this.budget / Math.max(1, enabledEngines.size)));
+    let activeEnabled = 0;
+    enabledEngines.forEach((e) => { if (e.active) activeEnabled++; });
+    return splitBudget(this.budget, enabledEngines.size, activeEnabled, this.active, this.pinned.length);
   }
 
-  private draw(bmp: ImageBitmap): void {
+  /** Draws bmp opaque, then `over` on top at `alpha` (blend). globalAlpha is always reset. */
+  private draw(bmp: ImageBitmap, over: ImageBitmap | null, alpha: number): void {
     const ctx = this.ctx;
     if (!ctx) return;
+    this.drawCover(ctx, bmp);
+    if (over && alpha > 0) {
+      ctx.globalAlpha = alpha;
+      try {
+        this.drawCover(ctx, over);
+      } finally {
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+
+  private drawCover(ctx: CanvasRenderingContext2D, bmp: ImageBitmap): void {
     const b = this.backing;
     const d = coverDest({ w: bmp.width, h: bmp.height }, b);
     if (bmp.width === b.w && bmp.height === b.h && d.x === 0 && d.y === 0 && d.w === b.w && d.h === b.h) {
@@ -330,8 +402,9 @@ export class FrameSequenceEngine {
     this.hasBitmap[i] = 0;
     if (b) {
       if (!this.isPinned[i]) this.liveCount = Math.max(0, this.liveCount - 1);
-      if (b === this.lastDrawn) {
+      if (b === this.lastDrawn || b === this.lastDrawnB) {
         this.lastDrawn = null;
+        this.lastDrawnB = null;
       }
       b.close();
     }
@@ -390,9 +463,15 @@ export class FrameSequenceEngine {
           this.warm,
           this.retryAt,
           now,
+          this.fetchHorizon,
         );
         if (i < 0) break;
         this.startFetch(i);
+      }
+      if (this.fullFetch && !this.allFetchedFired && this.inflightFetches === 0 && !this.fetchState.includes(FETCH_IDLE)) {
+        this.allFetchedFired = true;
+        const cb = this.onAllFetched;
+        if (cb) queueMicrotask(cb);
       }
     }
     if (this.paused) return;
@@ -434,6 +513,11 @@ export class FrameSequenceEngine {
   }
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
+
+  /** URL actually used for frame i (per-frame JPEG fallback aware). Debug HUD only. */
+  urlOf(i: number): string {
+    return (this.perFrameFallback[i] && this.fallbackUrls ? this.fallbackUrls[i] : this.urls[i]) ?? '';
+  }
 
   private startFetch(i: number): void {
     this.fetchState[i] = FETCH_INFLIGHT;
@@ -495,6 +579,7 @@ export class FrameSequenceEngine {
   private switchToFallback(): void {
     if (!this.fallbackUrls) return;
     this.usingFallback = true;
+    this.allFetchedFired = false;
     this.epoch++;
     this.urls = this.fallbackUrls;
     this.fetchState.fill(0);
@@ -538,7 +623,10 @@ export class FrameSequenceEngine {
         if (!old && !this.isPinned[i]) this.liveCount++;
         this.hasBitmap[i] = 1;
         if (old) {
-          if (old === this.lastDrawn) this.lastDrawn = null;
+          if (old === this.lastDrawn || old === this.lastDrawnB) {
+            this.lastDrawn = null;
+            this.lastDrawnB = null;
+          }
           old.close();
         }
         this.onFrameReady?.(i);

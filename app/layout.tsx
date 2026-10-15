@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Cormorant_Garamond, Manrope } from 'next/font/google';
+import { Bodoni_Moda, Cormorant_Garamond, Manrope } from 'next/font/google';
 import './globals.css';
 import { LenisProvider } from '@/components/providers/LenisProvider';
 import { cn } from "@/lib/utils";
@@ -16,6 +16,15 @@ const display = Cormorant_Garamond({
 const sans = Manrope({
   subsets: ['latin'],
   variable: '--font-sans-body',
+  display: 'swap',
+});
+
+// Crypto step-scroll display face (CryptoSlabs + Crypto caption rail). Variable: wght + opsz (optical size follows font-size).
+const lux = Bodoni_Moda({
+  subsets: ['latin'],
+  style: ['normal', 'italic'],
+  axes: ['opsz'],
+  variable: '--font-lux-display',
   display: 'swap',
 });
 
@@ -91,7 +100,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(display.variable, sans.variable)}
+      className={cn(display.variable, sans.variable, lux.variable)}
       suppressHydrationWarning
     >
       <head>

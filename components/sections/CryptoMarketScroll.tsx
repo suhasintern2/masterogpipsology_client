@@ -2,48 +2,83 @@
 
 import React, { useRef, useCallback } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
+import { useStepScroll, type StepScrollOptions } from '@/components/hooks/useStepScroll';
 import { loadProgress } from '@/lib/load-progress';
-import { RevealText } from '@/components/motion/RevealText';
+import { DepthStage } from '@/components/sections/DepthStage';
+import { ScrollCaptions, type CaptionDriver } from '@/components/sections/ScrollCaptions';
+import { CryptoSlabs, type SlabDriver } from '@/components/sections/CryptoSlabs';
+import { CRYPTO_FLOW } from '@/lib/scroll-captions';
+import { CRYPTO_STOPS_RAW, knotProgress, framePos, stopListIndex, handoffEndY } from '@/lib/step-scroll';
+import { railU } from '@/lib/crypto-slabs';
 import {
   buildFrameSet,
   warmFirstFrame,
   warmIndices,
+  FRAMES_PER_SEQ,
+  SEQ_SCROLL_VH,
+  FOREX_OVERLAP_VH,
+  UNIQUE_LOCAL,
+  UNIQUE_PER_SEQ,
   type FrameSet,
   type FrameTier,
 } from '@/lib/frame-sequence/sources';
 
 // ── Tunable constants ────────────────────────────────────────────────────────
-const TOTAL_FRAMES = 240;
+const TOTAL_FRAMES = UNIQUE_PER_SEQ; // 192 unique of 240
 
-const urlsFor = (tier: FrameTier): FrameSet => buildFrameSet(['crypto'], tier);
-const PINNED = [0, TOTAL_FRAMES - 1] as const;
+const urlsFor = (tier: FrameTier): FrameSet => buildFrameSet(['crypto'], tier, FRAMES_PER_SEQ, UNIQUE_LOCAL);
+const CRYPTO_STOP_INDICES: readonly number[] = CRYPTO_STOPS_RAW.map((r) => stopListIndex(r, UNIQUE_LOCAL)); // [0, 89, 110, 142]
+const CRYPTO_KNOT_IDX = CRYPTO_STOP_INDICES[CRYPTO_STOP_INDICES.length - 1]; // 142 = raw 179, the hand-off stop
+// raw 179 is shown exactly where ForexFade starts (Crypto top + 250vh); raw 180-240 keep playing under the fade.
+const CRYPTO_KNOT_P = knotProgress(SEQ_SCROLL_VH, FOREX_OVERLAP_VH); // 5/7
+const CRYPTO_STEP: StepScrollOptions = {
+  stops: CRYPTO_STOP_INDICES, total: TOTAL_FRAMES, knotP: CRYPTO_KNOT_P,
+  tail: (l) => handoffEndY(l.top, l.height, SEQ_SCROLL_VH, FOREX_OVERLAP_VH), // slab 4: 179 -> Forex frame 1 (fade complete)
+};
+// Every landing frame (and the last frame) fetched first and never evicted.
+const PINNED: readonly number[] = [...CRYPTO_STOP_INDICES, TOTAL_FRAMES - 1]; // [0, 89, 110, 142, 191]
 // First 24 frames, then every 8th: a coarse fallback exists before the full fetch starts.
 const CRYPTO_WARM = warmIndices(TOTAL_FRAMES);
 if (typeof window !== 'undefined') {
   loadProgress.register('crypto-first-frame', 0.15);
   warmFirstFrame('crypto');
 }
-const frameForProgress = (p: number, total: number): number =>
-  Math.min(total - 1, Math.max(0, Math.round(p * (total - 1))));
 
 export function CryptoMarketScroll(): React.ReactElement {
   // HUD refs – written directly, never via React state
   const hudFrameRef = useRef<HTMLSpanElement>(null);
   const hudProgressRef = useRef<HTMLDivElement>(null);
   const lastHud = useRef({ frame: -1, pct: -1 });
+  const progressRef = useRef(0);
+  const captionRef: CaptionDriver = useRef(null);
+  const slabRef: SlabDriver = useRef(null);
 
-  const onUpdate = useCallback(({ progress, frame }: FrameSequenceUpdate): void => {
-    const last = lastHud.current;
-    if (frame !== last.frame) {
-      last.frame = frame;
-      if (hudFrameRef.current) hudFrameRef.current.textContent = String(frame + 1).padStart(3, '0');
-    }
-    const pct = Math.round(progress * 100);
-    if (pct !== last.pct) {
-      last.pct = pct;
-      if (hudProgressRef.current) hudProgressRef.current.style.transform = `scaleX(${pct / 100})`;
-    }
-  }, []);
+  const step = useStepScroll(CRYPTO_STEP);
+  // Fractional: the engine blends the two neighbouring frames. Knot at the last stop (raw 179); exact stop frame at rest.
+  const frameForProgress = useCallback(
+    (p: number, total: number): number => step.frameFor(framePos(p, total, CRYPTO_KNOT_IDX, CRYPTO_KNOT_P)),
+    [step],
+  );
+
+  const onUpdate = useCallback(
+    (u: FrameSequenceUpdate): void => {
+      progressRef.current = u.progress;
+      const s = step.coord(u.scroll);
+      captionRef.current?.(railU(s));
+      slabRef.current?.(s);
+      const last = lastHud.current;
+      if (u.frame !== last.frame) {
+        last.frame = u.frame;
+        if (hudFrameRef.current) hudFrameRef.current.textContent = String((UNIQUE_LOCAL[u.frame] ?? u.frame) + 1).padStart(3, '0');
+      }
+      const pct = Math.round(u.progress * 100);
+      if (pct !== last.pct) {
+        last.pct = pct;
+        if (hudProgressRef.current) hudProgressRef.current.style.transform = `scaleX(${pct / 100})`;
+      }
+    },
+    [step],
+  );
 
   const { sectionRef, stickyRef, canvasRef } = useFrameSequence({
     urlsFor,
@@ -52,6 +87,7 @@ export function CryptoMarketScroll(): React.ReactElement {
     frameForProgress,
     background: '#EFE7DC',
     onUpdate,
+    onLayout: step.onLayout,
     onFrameReady: (i) => {
       if (i === 0) loadProgress.complete('crypto-first-frame');
     },
@@ -63,7 +99,7 @@ export function CryptoMarketScroll(): React.ReactElement {
       id="crypto-sequence"
       aria-label="Crypto Market Interactive Scroll Sequence"
       className="relative w-full"
-      style={{ height: '450vh', backgroundColor: '#EFE7DC' }}
+      style={{ height: `${SEQ_SCROLL_VH + 100}vh`, backgroundColor: '#EFE7DC' }}
     >
       {/* Sticky viewport – contain: layout paint avoids unnecessary compositing */}
       <div
@@ -75,48 +111,18 @@ export function CryptoMarketScroll(): React.ReactElement {
           contain: 'layout paint',
         }}
       >
-        {/* Canvas fills the sticky wrapper exactly */}
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none z-0"
-          style={{ display: 'block', imageRendering: 'auto' }}
-        />
+        {/* Canvas fills the sticky wrapper exactly; DepthStage adds the 3D tilt */}
+        <DepthStage progressRef={progressRef} zIndex={0}>
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{ display: 'block', imageRendering: 'auto' }}
+          />
+        </DepthStage>
 
-        {/* Editorial overlay – transform/opacity only, no layout properties */}
-        <div
-          className="relative z-10 w-full h-full max-w-7xl mx-auto px-5 sm:px-8 md:px-12 lg:px-16 flex flex-col justify-between py-10 md:py-14 pointer-events-none"
-        >
-
-          {/* Headline */}
-          <div className="flex flex-col items-end text-right max-w-xl self-end">
-            <div className="flex items-center gap-2 text-xs font-mono text-[#8C6D23] uppercase tracking-widest mb-3">
-              <span>The Inaugural Asset Class</span>
-              <span className="w-6 h-px bg-[#D4AF37]" />
-            </div>
-            <RevealText as="h2" mode="lines" trigger="scroll"
-              className="font-display font-medium leading-[1.08] tracking-tight text-[#0E0F14] text-3xl sm:text-4xl md:text-5xl lg:text-[3.6rem]"
-              style={{ fontFamily: 'var(--font-display)', fontSize: 'var(--fs-h2)', textShadow: '0 1px 18px rgba(255,255,255,0.6)' }}
-            >
-              Let me introduce you <br className="hidden sm:inline" />
-              to the market, <br />
-              <span className="italic font-normal text-[#B38728]">first crypto.</span>
-            </RevealText>
-            <p className="mt-4 md:mt-6 text-sm md:text-base font-body text-[#524C42] leading-relaxed max-w-md">
-              Where 24/7 algorithmic volatility, perpetual order flow, and global liquidity pools converge. The foundation every modern institutional trader masters.
-            </p>
-            <div className="mt-6 flex flex-wrap justify-end gap-2.5">
-              <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">
-                BTC • BITCOIN
-              </span>
-              <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">
-                ETH • ETHEREUM
-              </span>
-              <span className="px-3 py-1 rounded-md border border-[#D4AF37]/30 bg-[#FAF6ED]/90 text-[11px] font-mono text-[#38332B] shadow-xs">
-                SOL • SOLANA
-              </span>
-            </div>
-          </div>
-        </div>
+        {/* Slab texts – transform/opacity only, scrubbed by the stop coordinate */}
+        <CryptoSlabs driverRef={slabRef} />
+        <ScrollCaptions flow={CRYPTO_FLOW} driverRef={captionRef} variant="crypto" />
       </div>
     </section>
   );

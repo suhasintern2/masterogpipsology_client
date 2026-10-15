@@ -51,7 +51,7 @@ Rulebook for anyone (human or AI) changing or deploying this site. Commit before
 
 ## 3. Content Rules
 
-- **Copy:** Don't change unless owner explicitly asks
+- **Copy:** Don't change unless owner explicitly asks. Crypto section copy lives in `CRYPTO_SLAB_INTRO`, `CRYPTO_SLAB_TEACH`, `CRYPTO_SLAB_CLOSE`, and `CRYPTO_RAIL_LINES` in `lib/content.ts`
 - **Metrics:** No fake numbers — no hardcoded/random counters, stats, FPS readouts, or "real data" you invented. Only real data is allowed.
 - **Assets:** Never delete
 - **Social links:** Placeholders in `lib/content.ts` — verify names before launch:
@@ -70,6 +70,7 @@ Rulebook for anyone (human or AI) changing or deploying this site. Commit before
   - Display: Cormorant Garamond
   - Body: Manrope
   - Labels: Wide-tracked small caps
+  - Crypto step-scroll texts: Bodoni Moda (display), motion 'Rise and lift' (docs/plans/crypto-text-motion.md)
 - **Hero:** Original static photo (`root hero.png` via `next/image`) + only gentle scroll zoom. No dark overlays, no 3D.
 - **Headlines:** Letter by letter with gold "execution" and light flare on its first "e"
 - **Nav chips:** Soft foggy beige-gold border-trace, then fill on hover (nothing flashy)
@@ -77,7 +78,7 @@ Rulebook for anyone (human or AI) changing or deploying this site. Commit before
 - **Cursor:** No custom cursor
 - **Sections:**
   - Crypto → Forex: Forex fades in and overlaps Crypto
-  - Intelligence: Show only "Be a man." / "Take that goddamn risk."
+  - Intelligence: calm two-line serif closing statement (`CLOSING_LINES` in `lib/content.ts`), second line gold italic, fade-in only. No drips or effects.
   - Moments: Swipe card stack
   - Gold seam transitions between sections
   - Logo (Rings of Precision): Centred and locked
@@ -107,4 +108,4 @@ Rulebook for anyone (human or AI) changing or deploying this site. Commit before
 
 ---
 
-**Last updated:** 2026-10-08
+**Last updated:** 2026-10-14

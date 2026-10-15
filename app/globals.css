@@ -898,3 +898,90 @@ html.js .th-c.is-on, html.js .th--static .th-c { opacity: 1; animation: none; }
 .seam--static .seam__line { transform: none; }
 .seam--static .seam__mark { transform: rotate(45deg); }
 .seam--static .seam__bloom { opacity: .35; transform: none; }
+
+/* ─── Workflow captions (components/sections/ScrollCaptions.tsx) ─── */
+/* Scrubbed from the frame tick by JS: transform + opacity only, no CSS transitions. Mobile first; md = 48rem. */
+.wf { --wf-rail: 1.375rem; --wf-gap: 1.25rem; --wf-node: 8px; --wf-node-y: 1.15rem; --wf-focus: 9.5rem; }
+@media (width >= 48rem) { .wf { --wf-rail: 1.75rem; --wf-gap: 1.75rem; --wf-node: 9px; --wf-node-y: 1.35rem; --wf-focus: 11.5rem; } }
+.wf__track { position: absolute; left: 0; top: 0; width: 100%; display: flex; flex-direction: column; gap: var(--wf-gap); will-change: transform; }
+.wf__step { position: relative; padding-left: var(--wf-rail); visibility: hidden; }
+.wf__node { position: absolute; left: 0; top: var(--wf-node-y); width: var(--wf-node); height: var(--wf-node); margin-top: calc(var(--wf-node) / -2);
+  background: linear-gradient(135deg, #F6E3A1, #D4AF37 50%, #8C6D23);
+  box-shadow: 0 0 0 1px rgba(250, 246, 237, .55), 0 0 12px rgba(212, 175, 55, .5);
+  opacity: 0; transform: rotate(45deg) scale(.6); will-change: transform, opacity; }
+.wf__line { position: absolute; left: calc(var(--wf-node) / 2 - .5px); top: var(--wf-node-y);
+  bottom: calc(-1 * (var(--wf-gap) + var(--wf-node-y))); width: 1px;
+  background: linear-gradient(180deg, #D4AF37, #B38728);
+  box-shadow: 0 0 0 .5px rgba(250, 246, 237, .3), 0 0 8px rgba(212, 175, 55, .35);
+  transform-origin: 50% 0; transform: scaleY(0); opacity: 0; will-change: transform, opacity; }
+.wf__plate { position: relative; opacity: 0; will-change: transform, opacity; }
+.wf__plate::before { content: ''; position: absolute; right: 100%; top: calc(var(--wf-node-y) - 1.5px); height: 1px;
+  width: calc(var(--wf-rail) - var(--wf-node) * 1.5);
+  background: linear-gradient(90deg, rgba(179, 135, 40, .5), #B38728); }
+/* Forex keeps Cormorant; the Crypto rail uses the Bodoni stack (variant "crypto"). */
+.wf__text { font-family: var(--font-display); }
+.wf--crypto .wf__text { font-family: var(--font-lux); font-weight: 500; font-size: 1.125rem; letter-spacing: -.005em; }
+@media (width >= 48rem) { .wf--crypto .wf__text { font-size: 1.375rem; } }
+.wf__spark { position: absolute; left: calc(var(--wf-node) / 2); top: 0; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+  border-radius: 50%; opacity: 0; pointer-events: none; will-change: transform, opacity;
+  background: radial-gradient(circle, #fff 0 20%, #F6E3A1 42%, rgba(212, 175, 55, 0) 70%); }
+@media (prefers-reduced-motion: reduce) { .wf__spark { display: none; } }
+
+/* ─── Crypto slab texts (components/sections/CryptoSlabs.tsx) ─── */
+/* Scrubbed from the Crypto frame tick by JS (lib/crypto-slabs.ts): transform + opacity only, no CSS transitions. */
+.cslab { position: absolute; pointer-events: none; visibility: hidden; }
+.cslab--intro { inset: 0; }
+
+/* Crypto text motion (lib/text-motion.ts): masks + transform/opacity only, written from the Crypto frame tick. */
+.cslab, .wf--crypto { --font-lux: var(--font-lux-display), 'Bodoni Moda', 'Bodoni 72', Didot, Georgia, serif; }
+.cslab [data-u], .wf--crypto [data-u] { opacity: 0; will-change: transform, opacity; }
+.tm-mask { display: inline-block; vertical-align: top; overflow: hidden; white-space: nowrap; perspective: 600px;
+  padding: .2em .12em .28em; margin: -.2em -.12em -.28em; }
+.tm-mask--chip { padding: 4px; margin: -4px; }
+.tm-mask > .tm-u { display: inline-block; }
+.tm-u[data-u="tilt"] { transform-origin: 50% 100%; backface-visibility: hidden; }
+.cslab__rule { transform-origin: 0 50%; }
+.cslab__rule[data-dir="-1"] { transform-origin: 100% 50%; }
+
+/* Bodoni sets wider than Cormorant: display sizes x ~0.88 */
+.cslab__title--intro { font-size: calc(var(--fs-h2) * .88); }
+.cslab__label { display: flex; align-items: center; gap: .6rem; font-family: var(--font-body); font-size: var(--fs-label);
+  font-weight: 600; letter-spacing: .28em; text-transform: uppercase; font-variant: small-caps; color: #8C6D23; }
+.cslab__rule { display: block; width: 1.5rem; height: 1px; background: #D4AF37; }
+.cslab__title { margin-top: .75rem; font-family: var(--font-lux); font-weight: 500; line-height: 1.08; letter-spacing: -.01em;
+  color: #0E0F14; text-shadow: 0 1px 18px rgba(255, 255, 255, .6); }
+.cslab__title em { font-style: italic; font-weight: 400; color: #B38728; }
+.cslab__body { margin-top: 1rem; font-family: var(--font-body); font-size: clamp(.875rem, .8rem + .2vw, 1rem); line-height: 1.6; color: #524C42; }
+.cslab__path { margin-top: 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: .5rem .75rem; font-family: var(--font-body);
+  font-size: var(--fs-label); font-weight: 600; letter-spacing: .24em; text-transform: uppercase; color: #38332B; }
+.cslab__path i { display: block; width: 5px; height: 5px; transform: rotate(45deg);
+  background: linear-gradient(135deg, #F6E3A1, #D4AF37 50%, #8C6D23); }
+
+/* Slab 2: phones/portrait = top band under the nav pill; landscape >= md = top-left, clear of the ETH/SOL coins
+   (lower-left), the BTC flight (x >= 35%) in frames 112-139, and the caption rail (bottom-left). */
+.cslab--teach { left: 1.25rem; right: 1.25rem; top: 5rem; }
+.cslab--teach .cslab__title { font-size: clamp(1.35rem, 5.6vw, 1.75rem); }
+.cslab--teach .cslab__body { display: none; }
+@media (width >= 48rem) and (min-aspect-ratio: 4/5) {
+  .cslab--teach { left: max(1.5rem, 4.5vw); right: auto; top: 6.5rem; width: min(22rem, 28vw); }
+  .cslab--teach .cslab__title { font-size: clamp(1.55rem, .9rem + 1.4vw, 2.4rem); }
+  .cslab--teach .cslab__body { display: block; }
+}
+@media (max-height: 30rem) { .cslab--teach .cslab__body { display: none; } }
+
+/* Slab 3 (stop raw 179): centred above the falling coin. --coin-top = coin row 440/1080 under cover-fit and DepthStage push-in;
+   the text is visible only while the coin top is >= row 480 (lib/crypto-slabs.ts, tests/crypto-slabs.test.mjs). */
+.cslab--close { --coin-top: min(39dvh, calc(50dvh - 6.1vw)); --coin-gap: clamp(.75rem, 2.5dvh, 1.5rem);
+  left: 0; right: 0; bottom: calc(100% - var(--coin-top) + var(--coin-gap)); padding: 0 1.25rem; text-align: center; }
+.cslab--close .cslab__label { justify-content: center; }
+.cslab--close .cslab__title { margin-top: .5rem; font-size: clamp(1.35rem, min(3.9dvh, 2.65vw), 2.85rem); }
+.cslab--close .cslab__br { display: none; }
+@media (max-aspect-ratio: 4/5) {
+  .cslab--close { --coin-top: 40dvh; }
+  .cslab--close .cslab__title { font-size: clamp(1.35rem, 5.7vw, 2.4rem); }
+  .cslab--close .cslab__br { display: inline; }
+}
+@media (max-height: 30rem) {
+  .cslab--close .cslab__label { display: none; }
+  .cslab--close .cslab__title { font-size: 1.125rem; }
+}

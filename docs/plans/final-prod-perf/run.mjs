@@ -44,7 +44,8 @@ if (mobile) {
   await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
   await send('Emulation.setUserAgentOverride', { userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Mobile Safari/537.36' });
 }
-await send('Page.addScriptToEvaluateOnNewDocument', { source: readFileSync(join(HERE, 'inject.js'), 'utf8') });
+await send('Page.addScriptToEvaluateOnNewDocument', { source: `window.__LAYOUT='unique';
+` + readFileSync(join(HERE, 'inject.js'), 'utf8') });
 await send('Tracing.start', { categories: 'devtools.timeline,v8,disabled-by-default-devtools.timeline', transferMode: 'ReportEvents' });
 await send('Page.navigate', { url: process.env.PERF_URL || 'http://localhost:3100/' });
 await sleep(mobile ? 9000 : 6000);

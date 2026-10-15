@@ -3,8 +3,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useFrameSequence, type FrameSequenceUpdate } from '@/components/hooks/useFrameSequence';
 import { IntelligenceHero } from '@/components/sections/IntelligenceHero';
+import { DepthStage } from '@/components/sections/DepthStage';
+import { ScrollCaptions, type CaptionDriver } from '@/components/sections/ScrollCaptions';
+import { FOREX_FLOW } from '@/lib/scroll-captions';
 import { RevealText } from '@/components/motion/RevealText';
-import { buildFrameSet, type FrameSet, type FrameTier } from '@/lib/frame-sequence/sources';
+import {
+  buildFrameSet,
+  warmIndices,
+  FRAMES_PER_SEQ,
+  SEQ_SCROLL_VH,
+  FOREX_OVERLAP_VH,
+  UNIQUE_LOCAL,
+  UNIQUE_PER_SEQ,
+  type FrameSet,
+  type FrameTier,
+} from '@/lib/frame-sequence/sources';
 import {
   frameLockRect,
   nativeVideoRect,
@@ -14,36 +27,42 @@ import {
   type NativeMode,
 } from '@/lib/frame-sequence/handoff';
 
-// ── Tunable constants ────────────────────────────────────────────────────────
-const FOREX_FRAMES       = 240;
-const STOCK_FRAMES       = 240;
-const OPPORTUNITY_FRAMES = 240;
-const TOTAL_FRAMES       = FOREX_FRAMES + STOCK_FRAMES + OPPORTUNITY_FRAMES; // 720
+// ── Tunable constants ────────────────────────────────────────────────────────────────────────
+const PER          = UNIQUE_PER_SEQ;              // 192 unique frames per source folder
+const TOTAL_FRAMES = PER * 3;                     // 576
+// Same pace as Crypto: one folder per SEQ_SCROLL_VH (350vh). Tail length unchanged (was 0.30 x 1400vh).
+const FRAME_VH  = 3 * SEQ_SCROLL_VH;              // 1050
+const TAIL_VH   = 420;
+const RANGE_VH  = FRAME_VH + TAIL_VH;             // 1470
+const SCROLL_HEIGHT_VH     = RANGE_VH + 100;      // 1570 (sticky = 100vh)
+const FRAME_SCROLL_PORTION = FRAME_VH / RANGE_VH; // 5/7
+const at = (vhAfterFrames: number): number => (FRAME_VH + vhAfterFrames) / RANGE_VH;
 
-const SCROLL_HEIGHT_VH     = 1500; // 500vh per phase + transition buffer
-const FRAME_SCROLL_PORTION = 0.70; // 0.00 .. 0.70 = 720 frames; then dissolve, settle and reveal (below)
+// Hand-off to the video (see lib/frame-sequence/handoff.ts). Same vh offsets as before (old p x 1400 - 980).
+const HUD_FADE_START = at(-28);
+const HUD_FADE_LEN   = 70 / RANGE_VH;
+const XFADE_START = at(42);  // HUD gone, last frame settled
+const XFADE_END   = at(154);
+const SETTLE_END  = at(266);
+const REVEAL_ON   = at(266);
+const REVEAL_OFF  = at(210);
+const VIDEO_ARM_FRAME = 2 * PER + PER / 2;        // 480 = mid Opportunity, latest arm point
 
-// Hand-off to the video (see lib/frame-sequence/handoff.ts)
-const XFADE_START = 0.73; // HUD gone (0.68..0.73), frame 720 settled since 0.70
-const XFADE_END   = 0.81;
-const SETTLE_END  = 0.89;
-const REVEAL_ON   = 0.89;
-const REVEAL_OFF  = 0.85;
-
-// ── Sequence descriptor ──────────────────────────────────────────────────────
+// ── Sequence descriptor ───────────────────────────────────────────────────────────────
 type SeqName = 'forex' | 'stock' | 'opportunity';
 
 interface SeqInfo {
-  name:   SeqName;
-  start:  number;
-  frames: number;
-  label:  string;
+  name:     SeqName;
+  start:    number;
+  frames:   number;
+  rawStart: number;
+  label:    string;
 }
 
 const SEQUENCES: SeqInfo[] = [
-  { name: 'forex',       start: 0,                           frames: FOREX_FRAMES,       label: 'Asset Class 02 \u2022 Foreign Exchange' },
-  { name: 'stock',       start: FOREX_FRAMES,                frames: STOCK_FRAMES,       label: 'Asset Class 03 \u2022 Stock Market'     },
-  { name: 'opportunity', start: FOREX_FRAMES + STOCK_FRAMES, frames: OPPORTUNITY_FRAMES, label: 'The Opportunity'                        },
+  { name: 'forex',       start: 0,       frames: PER, rawStart: 0,   label: 'Asset Class 02 • Foreign Exchange' },
+  { name: 'stock',       start: PER,     frames: PER, rawStart: 240, label: 'Asset Class 03 • Stock Market'     },
+  { name: 'opportunity', start: 2 * PER, frames: PER, rawStart: 480, label: 'The Opportunity'                        },
 ];
 
 function resolveSeq(globalIdx: number): { seq: SeqInfo; localIdx: number } {
@@ -54,12 +73,19 @@ function resolveSeq(globalIdx: number): { seq: SeqInfo; localIdx: number } {
   return { seq: SEQUENCES[0], localIdx: globalIdx };
 }
 
-const urlsFor = (tier: FrameTier): FrameSet => buildFrameSet(['forex', 'stock_market', 'opportunity'], tier);
-const PINNED = [0, 719] as const;
+const urlsFor = (tier: FrameTier): FrameSet =>
+  buildFrameSet(['forex', 'stock_market', 'opportunity'], tier, FRAMES_PER_SEQ, UNIQUE_LOCAL);
+const PINNED = [0, TOTAL_FRAMES - 1] as const;
+const FOREX_WARM = warmIndices(PER);
+// Tilt reaches exactly 0 before the doorway dissolve starts, so the last frame matches the video lock.
+const TILT_EASE = [at(-140), at(0)] as const;
+// Fractional: the engine blends the two neighbouring frames. Past the frame range it is exactly the last frame.
 const frameForProgress = (p: number, total: number): number =>
   p < FRAME_SCROLL_PORTION
-    ? Math.min(total - 1, Math.max(0, Math.floor((p / FRAME_SCROLL_PORTION) * total)))
+    ? Math.min(total - 1, Math.max(0, (p / FRAME_SCROLL_PORTION) * (total - 1)))
     : total - 1;
+// Folder joins (forex -> stock_market -> opportunity) are separate shots: never cross-blend them.
+const FOLDER_CUTS = [PER - 1, 2 * PER - 1] as const;
 
 // ── Component ────────────────────────────────────────────────────────────────
 export function ForexMarketScroll(): React.ReactElement {
@@ -69,11 +95,13 @@ export function ForexMarketScroll(): React.ReactElement {
   const videoRef        = useRef<HTMLVideoElement | null>(null);
   const videoStateRef   = useRef<'play' | 'pause'>('pause');
   const armedRef        = useRef<boolean>(false);
+  const framesFetchedRef = useRef(false);
 
   const [revealed, setRevealed] = useState(false);
   const revealedRef = useRef(false);
   const reducedRef  = useRef(false);
   const progressRef = useRef(0);
+  const captionRef: CaptionDriver = useRef(null);
   const shadeElRef  = useRef<HTMLElement | null>(null);
   const geomRef     = useRef<{ native: HRect; lock: HRect } | null>(null);
 
@@ -155,14 +183,16 @@ export function ForexMarketScroll(): React.ReactElement {
 
   const onUpdate = ({ progress, frame }: FrameSequenceUpdate): void => {
     progressRef.current = progress;
-    const globalIdx = frame;
-    const { seq, localIdx } = resolveSeq(globalIdx);
+    captionRef.current?.(Math.min(1, progress / FRAME_SCROLL_PORTION));
+    const { seq, localIdx } = resolveSeq(frame);
+    const rawLocal = UNIQUE_LOCAL[localIdx];
+    const globalIdx = seq.rawStart + rawLocal;
 
     // ── HUD text ──────────────────────────────────────────────────────────
-    put('hudFrame', String(localIdx + 1).padStart(3, '0'), (v) => { if (hudFrameRef.current) hudFrameRef.current.textContent = v; });
-    put('hudTotal', String(seq.frames), (v) => { if (hudTotalRef.current) hudTotalRef.current.textContent = v; });
+    put('hudFrame', String(rawLocal + 1).padStart(3, '0'), (v) => { if (hudFrameRef.current) hudFrameRef.current.textContent = v; });
+    put('hudTotal', String(FRAMES_PER_SEQ), (v) => { if (hudTotalRef.current) hudTotalRef.current.textContent = v; });
     put('hudLabel', seq.label, (v) => { if (hudLabelRef.current) hudLabelRef.current.textContent = v; });
-    const hp = localIdx / Math.max(seq.frames - 1, 1);
+    const hp = rawLocal / (FRAMES_PER_SEQ - 1);
     put('hudScale', hp.toFixed(3), (v) => { if (hudProgressRef.current) hudProgressRef.current.style.transform = `scaleX(${v})`; });
 
     // ── Overlay opacities (deterministic from global frame) ───────────────
@@ -192,8 +222,8 @@ export function ForexMarketScroll(): React.ReactElement {
 
     // Fade entire HUD out cleanly as doorway frame settles
     let hudMasterOp = 1;
-    if (progress > 0.68) {
-      hudMasterOp = Math.max(0, 1 - (progress - 0.68) / 0.05);
+    if (progress > HUD_FADE_START) {
+      hudMasterOp = Math.max(0, 1 - (progress - HUD_FADE_START) / HUD_FADE_LEN);
     }
 
     put('forexOp', (forexOp * hudMasterOp).toFixed(3), (v) => { if (forexOverlayRef.current) forexOverlayRef.current.style.opacity = v; });
@@ -207,7 +237,7 @@ export function ForexMarketScroll(): React.ReactElement {
     if (canvas && heroContent) {
       const e = smoothstep01(XFADE_START, XFADE_END, progress);
       put('opacity', (1 - e).toFixed(3), (v) => { canvas.style.opacity = v; });
-      put('vis', progress >= 0.70 ? 'visible' : 'hidden', (v) => { heroContent.style.visibility = v; });
+      put('vis', progress >= FRAME_SCROLL_PORTION ? 'visible' : 'hidden', (v) => { heroContent.style.visibility = v; });
     }
     applySettle(progress);
     const want = revealedRef.current ? progress >= REVEAL_OFF : progress >= REVEAL_ON;
@@ -220,7 +250,7 @@ export function ForexMarketScroll(): React.ReactElement {
     // ── Background video: arm late, hold frame 0 until the dissolve completes ──
     const video = getVideo();
     if (video) {
-      if (progress >= 0.45 && !armedRef.current) {
+      if (!armedRef.current && (frame >= VIDEO_ARM_FRAME || (framesFetchedRef.current && frame >= PER))) {
         armedRef.current = true;
         video.preload = 'auto';
         video.load();
@@ -245,6 +275,10 @@ export function ForexMarketScroll(): React.ReactElement {
     urlsFor,
     pinned: PINNED,
     frameForProgress,
+    warm: FOREX_WARM,
+    fetchHorizon: PER,
+    cuts: FOLDER_CUTS,
+    onAllFetched: () => { framesFetchedRef.current = true; },
     background: '#050505',
     prefetchMargin: '400% 0px 400% 0px',
     onUpdate,
@@ -261,7 +295,7 @@ export function ForexMarketScroll(): React.ReactElement {
       className="relative w-full z-20"
       style={{
         height: `${SCROLL_HEIGHT_VH}vh`,
-        marginTop: '-100vh',
+        marginTop: `-${FOREX_OVERLAP_VH}vh`,
         backgroundColor: 'transparent',
       }}
     >
@@ -285,16 +319,17 @@ export function ForexMarketScroll(): React.ReactElement {
         </div>
 
         {/* Layer 1: Single canvas – drawing surface for the 720 cinematic frames */}
-        <canvas
-          ref={canvasRef}
-          className="absolute inset-0 w-full h-full pointer-events-none z-10"
-          style={{
-            display: 'block',
-            imageRendering: 'auto',
-            willChange: 'opacity',
-          }}
-        />
-
+        <DepthStage progressRef={progressRef} easeOut={TILT_EASE} zIndex={10}>
+          <canvas
+            ref={canvasRef}
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            style={{
+              display: 'block',
+              imageRendering: 'auto',
+              willChange: 'opacity',
+            }}
+          />
+        </DepthStage>
 
         {/* Layer 3: HUD and Editorial Overlays */}
         <div
@@ -393,6 +428,7 @@ export function ForexMarketScroll(): React.ReactElement {
           </div>
 
         </div>
+        <ScrollCaptions flow={FOREX_FLOW} driverRef={captionRef} />
       </div>
     </section>
   );

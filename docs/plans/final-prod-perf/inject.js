@@ -1,4 +1,8 @@
 (() => {
+  // LAYOUT 'raw' = 240 frames/seq (before forex-smoothness), 'unique' = 192 frames/seq (pulldown duplicates i%5==2 dropped).
+  const U = (window.__LAYOUT || 'raw') === 'unique';
+  const PER = U ? 192 : 240; const FP = U ? 5 / 7 : 0.7; const FT = PER * 3;
+  const loc = (r) => (U ? (r % 5 === 2 ? -1 : r - Math.floor((r + 2) / 5)) : r);
   const P = (window.__perf = {
     raf: [], longtasks: [], loaf: [], draws: 0, drawMs: 0, drawMax: 0, drawsBig: 0,
     cib: 0, cibMs: [], cibFail: 0, redecode: 0, fetches: 0, fetchFail: 0, fetchBytes: 0,
@@ -29,8 +33,8 @@
     if (!u) return -1;
     const m = u.match(/assets\/(\w+)\/ezgif-frame-(\d+)/) || u.match(/frames\/v\d+\/(\w+)\/\w+\/(\d+)\./);
     if (!m) return -1;
-    const off = { crypto: 0, forex: 0, stock_market: 240, opportunity: 480 }[m[1]];
-    return off + (+m[2]) - 1;
+    const off = { crypto: 0, forex: 0, stock_market: PER, opportunity: 2 * PER }[m[1]];
+    const l = loc((+m[2]) - 1); return l < 0 ? -1 : off + l;
   };
   const lastDrawn = new WeakMap();
   const origDraw = CanvasRenderingContext2D.prototype.drawImage;
@@ -50,7 +54,7 @@
   const loop = (t) => {
     if (last) P.raf.push(Math.round((t - last) * 10) / 10); last = t;
     const vh = innerHeight;
-    for (const [id, map] of [['crypto-sequence', (p) => Math.round(p * 239)], ['forex-sequence', (p) => (p < 0.7 ? Math.min(719, Math.floor((p / 0.7) * 720)) : 719)]]) {
+    for (const [id, map] of [['crypto-sequence', (p) => Math.round(p * (PER - 1))], ['forex-sequence', (p) => (p < FP ? Math.min(FT - 1, U ? Math.round((p / FP) * (FT - 1)) : Math.floor((p / FP) * FT)) : FT - 1)]]) {
       const s = document.getElementById(id); if (!s) continue;
       const r = s.getBoundingClientRect(); if (r.top > 0 || r.bottom < vh) continue;
       const p = Math.min(1, Math.max(0, -r.top / (r.height - vh)));

@@ -73,7 +73,7 @@ export const NAV_LINKS: NavLink[] = [
 ];
 
 export const CTA_PRIMARY = 'Join the team';
-export const CTA_SECONDARY = 'See the curriculum';
+export const CTA_SECONDARY = 'Start journey';
 
 // TODO: replace with the real invite links before launch.
 export const TELEGRAM_URL = '#telegram';
@@ -206,6 +206,50 @@ export const TESTIMONIAL: Testimonial = {
 
 export const FINAL_CTA_HEADLINE = 'Education before execution.';
 
+/** Closing statement over the Intelligence video at the end of the Forex journey. Line 2 renders gold italic. */
+export const CLOSING_LINES: readonly [string, string] = ['Three markets. One discipline.', 'The opportunity is yours.'];
+
+// ─── Crypto step slabs (components/sections/CryptoSlabs.tsx) ────────────────
+export interface CryptoSlabCopy {
+  /** Wide-tracked small-caps label. */
+  label: string;
+  /** Display serif title: [plain part, gold italic part]. */
+  title: readonly [string, string];
+  /** Optional paragraph. */
+  body?: string;
+  /** Optional path row, separated by gold diamonds. */
+  path?: readonly string[];
+  /** Optional chips (intro slab). */
+  tags?: readonly string[];
+}
+/** Slab 1 (approach -> stop raw 112): who MOP is and why crypto comes first. */
+export const CRYPTO_SLAB_INTRO: CryptoSlabCopy = {
+  label: 'Master of Pipsology · Crypto',
+  title: ['Learn the market', 'that never sleeps.'],
+  body: 'Master of Pipsology is a trading academy in Mysore and Bengaluru. We begin with crypto, the clearest place to learn structure, liquidity and risk before real capital is on the line.',
+  tags: ['BTC • BITCOIN', 'ETH • ETHEREUM', 'SOL • SOLANA'],
+};
+/** Slab 2 (frames 112 -> 139): how MOP teaches, from the basics to independent trading. */
+export const CRYPTO_SLAB_TEACH: CryptoSlabCopy = {
+  label: 'The MOP method',
+  title: ['From the first chart', 'to the final call.'],
+  body: 'Live sessions, one step at a time. We start at zero, then build structure, liquidity and risk until you can plan, take and manage a trade on your own.',
+  path: ['Foundations', 'Structure', 'Risk', 'Execution'],
+};
+/** Slab 3 (stop raw 179, the hand-off): centred above the falling coin; Forex follows. */
+export const CRYPTO_SLAB_CLOSE: CryptoSlabCopy = {
+  label: 'Master of Pipsology',
+  title: ['Crypto is chapter one.', 'Forex comes next.'],
+};
+/** Crypto caption rail, one [label, text] per hold (lib/crypto-slabs.ts CRYPTO_RAIL_HOLDS_S: s = 0, 0.5, 1, 2, 3). */
+export const CRYPTO_RAIL_LINES: readonly (readonly [string, string])[] = [
+  ['Crypto', 'Open around the clock'],
+  ['Master of Pipsology', 'Where the journey begins'],
+  ['Foundations', 'Bitcoin, Ethereum, Solana'],
+  ['Discipline', 'Risk first, then the trade'],
+  ['Mysore · Bengaluru', 'Two cities, one standard'],
+];
+
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
 export const FOOTER_COLUMNS: FooterColumn[] = [
@@ -230,10 +274,8 @@ export const FOOTER_COLUMNS: FooterColumn[] = [
   {
     heading: 'Locations',
     links: [
-      { label: 'London, UK', href: '#' },
-      { label: 'Dubai, UAE', href: '#' },
-      { label: 'Lagos, Nigeria', href: '#' },
-      { label: 'Online (global)', href: '#' },
+      { label: 'Mysore, India', href: '#' },
+      { label: 'Bengaluru, India', href: '#' },
     ],
   },
 ];

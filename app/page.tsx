@@ -19,6 +19,7 @@ import { Testimonial } from '@/components/sections/Testimonial';
 import { MagicRingShowcase } from '@/components/art/MagicRingShowcase';
 import { FinalCta } from '@/components/sections/FinalCta';
 import { Footer } from '@/components/sections/Footer';
+import { FrameDebugHud } from '@/components/debug/FrameDebugHud'; // TEMP debug HUD
 import { Preloader } from '@/components/fx/Preloader';
 import { PaletteBackdrop } from '@/components/fx/PaletteBackdrop';
 import { Grain } from '@/components/fx/Grain';
@@ -28,6 +29,7 @@ import { ForexFade } from '@/components/fx/ForexFade';
 export default function Page(): React.ReactElement {
   return (
     <>
+      {process.env.NODE_ENV === 'development' && <FrameDebugHud />} {/* TEMP debug HUD, dev-only */}
       <Preloader />
       <PaletteBackdrop />
       <Grain />

@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
+import { CLOSING_LINES } from '@/lib/content';
 import styles from './IntelligenceHero.module.css';
 
 const EASING = [0.22, 1, 0.36, 1] as const;
@@ -24,6 +25,8 @@ export function IntelligenceHero({
   const videoRef = useRef<HTMLVideoElement>(null);
   const inView = useInView(containerRef, { once: false, amount: 0.15 });
   const show = embedded ? revealed : inView;
+  const reduce = useReducedMotion();
+  const rise = reduce ? 0 : 12;
 
   // Play video on mount / view
   useEffect(() => {
@@ -213,19 +216,19 @@ export function IntelligenceHero({
         <div className={styles.statement}>
           <motion.p
             className={styles.stmtLine}
-            initial={{ opacity: 0, y: 18 }}
-            animate={show ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
-            transition={{ duration: 0.9, delay: 0.06, ease: EASING }}
+            initial={{ opacity: 0, y: rise }}
+            animate={show ? { opacity: 1, y: 0 } : { opacity: 0, y: rise }}
+            transition={{ duration: 1.1, delay: 0.1, ease: EASING }}
           >
-            Be a man.
+            {CLOSING_LINES[0]}
           </motion.p>
           <motion.p
             className={`${styles.stmtLine} ${styles.stmtGold}`}
-            initial={{ opacity: 0, y: 18 }}
-            animate={show ? { opacity: 1, y: 0 } : { opacity: 0, y: 18 }}
-            transition={{ duration: 0.9, delay: 0.2, ease: EASING }}
+            initial={{ opacity: 0, y: rise }}
+            animate={show ? { opacity: 1, y: 0 } : { opacity: 0, y: rise }}
+            transition={{ duration: 1.1, delay: 0.35, ease: EASING }}
           >
-            Take that goddamn risk.
+            {CLOSING_LINES[1]}
           </motion.p>
         </div>
       ) : (

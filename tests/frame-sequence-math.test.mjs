@@ -16,6 +16,8 @@ import {
   lookahead,
   decodeStride,
   retryDelayMs,
+  splitBudget,
+  FETCH_HORIZON_PENALTY,
 } from '../lib/frame-sequence/math.ts';
 
 test('sectionProgress', () => {
@@ -174,4 +176,27 @@ test('bitmapBudget with coarse pointer', () => {
   assert.equal(bitmapBudget({ w: 864, h: 1080 }, 8, 240, true), 53);
   assert.equal(bitmapBudget({ w: 1920, h: 1080 }, 8, 240), 48);
   assert.equal(bitmapBudget({ w: 1920, h: 1080 }, 4, 240), 32);
+});
+
+test('fetchScore horizon', () => {
+  assert.ok(fetchScore(300, 0, 1, 24, 192) >= FETCH_HORIZON_PENALTY);
+  assert.ok(fetchScore(160, 0, 1, 24, 192) < FETCH_HORIZON_PENALTY);
+  assert.equal(fetchScore(10, 0, 1, 24, 5), 10);
+  assert.equal(fetchScore(300, 0, 1, 24), fetchScore(300, 0, 1, 24, Infinity));
+});
+
+test('pickNextFetch horizon', () => {
+  const state = new Uint8Array(400);
+  for (let i = 0; i < 400; i++) if (i <= 24 || i % 16 === 0 || (i % 8 === 0 && i <= 100)) state[i] = 2;
+  assert.equal(pickNextFetch(state, [], 0, 1, 24, true), 104);
+  assert.equal(pickNextFetch(state, [], 0, 1, 24, true, [], undefined, 0, 100), 28);
+});
+
+test('splitBudget', () => {
+  assert.equal(splitBudget(46, 1, 0, false, 2), 46);
+  assert.equal(splitBudget(46, 2, 1, true, 2), 34);
+  assert.equal(splitBudget(46, 2, 1, false, 2), 14);
+  assert.equal(splitBudget(46, 2, 0, false, 2), 23);
+  assert.equal(splitBudget(46, 2, 2, true, 2), 23);
+  assert.equal(splitBudget(20, 3, 1, true, 2), 16);
 });

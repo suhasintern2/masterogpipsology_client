@@ -5,18 +5,25 @@ import { useLenis } from '@/components/providers/LenisProvider';
 import { onEveryFrame } from '@/lib/frame-loop';
 import { FrameSequenceEngine } from '@/lib/frame-sequence/engine';
 import { damp, sectionProgress } from '@/lib/frame-sequence/math';
-import { detectFrameTier, type FrameSet, type FrameTier } from '@/lib/frame-sequence/sources';
+import { hudActive, hudTick } from '@/components/debug/FrameDebugHud'; // TEMP debug HUD
+import { UNIQUE_LOCAL, detectFrameTier, type FrameSet, type FrameTier } from '@/lib/frame-sequence/sources'; // UNIQUE_LOCAL: TEMP debug HUD
+
+const HUD_TIER: Record<FrameTier, string> = { full: 'full (JPEG 1920x1080)', lite: 'lite (WebP 1280x720)', portrait: 'portrait (WebP 864x1080 centre crop)' }; // TEMP debug HUD
 
 export interface FrameSequenceUpdate {
   progress: number;
   frame: number;
   shownFrame: number;
+  /** Fractional frame position requested this tick. */
+  pos: number;
+  /** Scroll offset used this tick. */
+  scroll: number;
 }
 
 export interface UseFrameSequenceOptions {
   /** Builds the global URL list for a tier. Pass a module-level function. */
   urlsFor: (tier: FrameTier) => FrameSet;
-  /** Integer 0..total-1 */
+  /** Fractional frame position 0..total-1 (must reach exactly total-1 at the end). The engine blends floor(pos) and floor(pos)+1. */
   frameForProgress: (progress: number, total: number) => number;
   /** Global indices fetched first and never evicted. */
   pinned?: readonly number[];
@@ -32,6 +39,16 @@ export interface UseFrameSequenceOptions {
   decodeMargin?: string;
   /** Fired after a frame (global index) is decoded. */
   onFrameReady?: (index: number) => void;
+  /** Frames within this distance of the current frame are fetched strictly nearest-first. Engine default 24. */
+  nearWindow?: number;
+  /** Frames further than this from the current frame are fetched last (e.g. one source folder). */
+  fetchHorizon?: number;
+  /** Fired once when every frame has been fetched. */
+  onAllFetched?: () => void;
+  /** Indices i where frame i -> i+1 is a hard cut (e.g. joins of source folders). Never blended across. */
+  cuts?: readonly number[];
+  /** Called after every layout measure (mount, resize). */
+  onLayout?: (layout: Readonly<SequenceLayout>) => void;
 }
 
 export interface FrameSequenceRefs {
@@ -40,7 +57,7 @@ export interface FrameSequenceRefs {
   canvasRef: RefObject<HTMLCanvasElement | null>;
 }
 
-interface Layout {
+export interface SequenceLayout {
   top: number;
   height: number;
   viewportH: number;
@@ -55,7 +72,7 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
   const lenisRef = useRef<ReturnType<typeof useLenis>>(null);
   const nativeScrollRef = useRef(0);
   const reducedRef = useRef(false);
-  const layoutRef = useRef<Layout>({ top: 0, height: 0, viewportH: 0 });
+  const layoutRef = useRef<SequenceLayout>({ top: 0, height: 0, viewportH: 0 });
   const progressRef = useRef(0);
 
   const lenis = useLenis();
@@ -101,6 +118,10 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
       expectedSize: set.expected,
       background: optsRef.current.background,
       onFrameReady: (i) => optsRef.current.onFrameReady?.(i),
+      nearWindow: optsRef.current.nearWindow,
+      fetchHorizon: optsRef.current.fetchHorizon,
+      onAllFetched: () => optsRef.current.onAllFetched?.(),
+      cuts: optsRef.current.cuts,
     });
     engine.attachCanvas(canvas);
 
@@ -120,6 +141,7 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
       layout.height = rect.height;
       layout.viewportH = sticky.clientHeight;
       engine.resize(sticky.clientWidth, sticky.clientHeight, window.devicePixelRatio || 1);
+      optsRef.current.onLayout?.(layout);
     };
 
     const currentScroll = (): number => {
@@ -132,15 +154,38 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
       return sectionProgress(currentScroll(), L.top, L.height, L.viewportH);
     };
 
+    // TEMP debug HUD: names derived from the URL list, no component wiring needed.
+    const hudSeqs = set.urls.map((u) => /\/(crypto|forex|stock_market|opportunity)\//.exec(u)?.[1] ?? '');
+    const hudName = hudSeqs[0] === 'crypto' ? 'Crypto' : 'Forex'; // TEMP debug HUD
+    const hudOn = process.env.NODE_ENV === 'development'; // TEMP debug HUD
+    const hudSample = (shown: number, pos: number, p: number): Parameters<typeof hudTick>[0] => { // TEMP debug HUD
+      const locals = UNIQUE_LOCAL; // TEMP debug HUD
+      const per = hudName === 'Forex' ? engine.total / 3 : engine.total; // TEMP debug HUD
+      const listIdx = shown % per; // TEMP debug HUD
+      return { // TEMP debug HUD
+        seq: hudName, shown, total: engine.total, pos, progress: p, folder: hudSeqs[shown] || hudName.toLowerCase(), // TEMP debug HUD
+        raw: (locals[listIdx] ?? listIdx) + 1, rawTotal: 240, listIdx, listTotal: per, // TEMP debug HUD
+        ended: hudName === 'Forex' && pos >= engine.total - 1, // TEMP debug HUD
+        file: engine.urlOf(shown).split('/').pop() ?? '', // TEMP debug HUD
+        tier: HUD_TIER[tier], // TEMP debug HUD
+      }; // TEMP debug HUD
+    };
+
     const tick = (_ts: number, deltaMs: number): void => {
       const opts = optsRef.current;
-      const target = targetProgress();
+      const scroll = currentScroll();
+      const L = layoutRef.current;
+      const target = sectionProgress(scroll, L.top, L.height, L.viewportH);
+      engine.setActive(target > 0 && target < 1);
       const rate = reducedRef.current || lenisRef.current ? 0 : (opts.smoothing ?? 12);
       const p = damp(progressRef.current, target, rate, Math.min(deltaMs / 1000, 0.05));
       progressRef.current = p;
-      const frame = opts.frameForProgress(p, engine.total);
-      const shown = engine.update(frame);
-      opts.onUpdate?.({ progress: p, frame, shownFrame: shown });
+      const pos = opts.frameForProgress(p, engine.total);
+      const frame = Math.min(engine.total - 1, Math.max(0, Math.round(pos)));
+      // Reduced motion: whole frames, no cross-blend.
+      const shown = engine.update(reducedRef.current ? frame : pos);
+      opts.onUpdate?.({ progress: p, frame, shownFrame: shown, pos, scroll });
+      if (hudOn) hudTick(hudSample(shown, pos, p)); // TEMP debug HUD
     };
 
     let unsub: (() => void) | null = null;
@@ -181,11 +226,13 @@ export function useFrameSequence(options: UseFrameSequenceOptions): FrameSequenc
           unsub = onEveryFrame(tick, 'render');
           tick(0, 16);
           optsRef.current.onActiveChange?.(true);
+          hudActive(hudName, true); // TEMP debug HUD
         } else if (unsub) {
           tick(0, 16); // apply the final 0 or 1 end state
           unsub();
           unsub = null;
           optsRef.current.onActiveChange?.(false);
+          hudActive(hudName, false); // TEMP debug HUD
         }
       },
       { rootMargin: '0px' },

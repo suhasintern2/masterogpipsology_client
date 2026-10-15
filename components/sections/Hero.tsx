@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import heroImg from '@/public/hero/hero-master-3840.jpg';
 import { motion, useInView } from 'framer-motion';
-import { Button } from '@/components/ui/Button';
+import { StartJourneyLink } from '@/components/nav/StartJourneyLink';
 import { TypingHeading } from '@/components/ui/TypingHeading';
 import { gsap, useGSAP } from '@/lib/gsap';
 import { useDeviceTier } from '@/lib/device-tier';
@@ -18,7 +18,6 @@ import { loadProgress } from '@/lib/load-progress';
 import type { TypingSegment } from '@/lib/typing';
 import {
   HERO_SUBLINE,
-  CTA_SECONDARY,
 } from '@/lib/content';
 import {
   fadeUpVariants,
@@ -174,9 +173,7 @@ export function Hero(): React.ReactElement {
             className="flex flex-col gap-3 pt-1"
           >
             <div className="flex flex-wrap items-center gap-3">
-              <Button as="a" href="#curriculum" size="lg" variant="outline" id="hero-cta-secondary">
-                {CTA_SECONDARY}
-              </Button>
+              <StartJourneyLink id="hero-cta-secondary" />
             </div>
           </motion.div>
         </div>

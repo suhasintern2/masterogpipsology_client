@@ -7,8 +7,8 @@ import React from 'react';
 
 import { motion, AnimatePresence, useReducedMotion, type Variants } from 'framer-motion';
 import { useEffect, useRef } from 'react';
-import { NAV_LINKS, CTA_PRIMARY } from '@/lib/content';
-import { JoinCapsules } from '@/components/ui/JoinCapsules';
+import { NAV_LINKS } from '@/lib/content';
+import { StartJourneyButton } from './StartJourneyButton';
 import { getLenis } from '@/components/providers/LenisProvider';
 
 export interface MobileMenuSheetProps {
@@ -138,8 +138,9 @@ export function MobileMenuSheet({ isOpen, onClose }: MobileMenuSheetProps): Reac
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, ease: EASE, delay: 0.3 }}
           >
-            <p className="font-body text-[11px] tracking-[0.28em] uppercase mb-3 text-center" style={{ color: 'rgba(250,246,240,0.7)' }}>{CTA_PRIMARY}</p>
-            <JoinCapsules tone="dark" size="lg" className="flex flex-col gap-2.5" capClassName="w-full" onNavigate={onClose} />
+            <div className="join-caps" data-tone="dark">
+              <StartJourneyButton size="lg" className="w-full" beforeScroll={onClose} />
+            </div>
           </motion.div>
         </motion.div>
       )}

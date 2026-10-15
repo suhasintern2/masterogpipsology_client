@@ -5,13 +5,27 @@ import React from 'react';
 // Wraps the page in Lenis smooth scrolling, driven by the gsap ticker. Disabled entirely under prefers-reduced-motion.
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import Lenis from 'lenis';
+import Lenis, { type VirtualScrollData } from 'lenis';
 import { useReducedMotion } from 'framer-motion';
 import { onEveryFrame } from '@/lib/frame-loop';
 import { ScrollTrigger } from '@/lib/gsap';
 import { scrollStore } from '@/lib/scroll-store';
 
 let currentLenis: Lenis | null = null;
+
+/** Input gate: return false to consume a wheel/touch event (Lenis then ignores it; the gate must call preventDefault itself). */
+export type ScrollGate = (data: VirtualScrollData) => boolean;
+const gates = new Set<ScrollGate>();
+/** Registers a gate; returns the unregister function. Every gate sees every event; any false consumes it. */
+export function addScrollGate(gate: ScrollGate): () => void {
+  gates.add(gate);
+  return () => { gates.delete(gate); };
+}
+function runGates(data: VirtualScrollData): boolean {
+  let pass = true;
+  for (const g of gates) pass = g(data) && pass;
+  return pass;
+}
 
 /** Lenis instance for non-React code (nav, cursor, particles). */
 export function getLenis(): Lenis | null {
@@ -54,6 +68,7 @@ export function LenisProvider({ children }: LenisProviderProps): React.ReactElem
       smoothWheel: true,
       wheelMultiplier: 1,
       syncTouch: false,
+      virtualScroll: runGates,
       autoRaf: false,
       anchors: { offset: -80 },
     });
